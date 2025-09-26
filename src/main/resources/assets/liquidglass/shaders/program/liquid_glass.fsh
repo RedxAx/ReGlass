@@ -3,7 +3,11 @@
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel2;
 uniform sampler2D iChannel3;
-uniform vec2 InSize;
+
+layout(std140) uniform SamplerInfo {
+    vec2 OutSize;
+    vec2 InSize;
+};
 
 layout(std140) uniform CustomUniforms {
     float Time;
@@ -11,6 +15,7 @@ layout(std140) uniform CustomUniforms {
 };
 
 in vec2 texCoord;
+in vec2 oneTexel;
 out vec4 fragColor;
 
 const float EPS_PIX = 2.;

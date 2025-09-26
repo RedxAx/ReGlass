@@ -1,6 +1,9 @@
 #version 150
 
-uniform sampler2D MainSampler;
+const int SAMPLES = 30;
+const float SIGMA = float(SAMPLES) * 0.25;
+
+uniform sampler2D DiffuseSampler;
 
 layout(std140) uniform Config {
     vec2 BlurDir;
@@ -11,14 +14,26 @@ in vec2 oneTexel;
 
 out vec4 fragColor;
 
-void main() {
+float gWeight(int i)
+{
+    float d = float(i);
+    return exp(-0.5 * (d * d) / (SIGMA * SIGMA));
+}
+
+void main()
+{
+    vec2 p = texCoord;
     vec2 delta = BlurDir * oneTexel;
+    vec4  sum  = vec4(0.0);
+    float acc  = 0.0;
+    int middle = SAMPLES / 2;
 
-    vec4 color = vec4(0.0);
-    color += texture(MainSampler, texCoord - delta);
-    color += texture(MainSampler, texCoord + delta);
-    color += texture(MainSampler, texCoord - delta * 2.0);
-    color += texture(MainSampler, texCoord + delta * 2.0);
+    for(int i = -middle; i <= middle; ++i)
+    {
+        float w = gWeight(i);
+        sum += texture(DiffuseSampler, p + delta * float(i)) * w;
+        acc += w;
+    }
 
-    fragColor = color / 4.0;
+    fragColor = sum / acc;
 }

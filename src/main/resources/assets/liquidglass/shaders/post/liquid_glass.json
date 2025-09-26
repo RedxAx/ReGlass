@@ -1,6 +1,8 @@
 {
   "targets": {
-    "swap": {}
+    "blur_x": {},
+    "blurred": {},
+    "bloom": {}
   },
   "passes": [
     {
@@ -8,11 +10,11 @@
       "fragment_shader": "liquidglass:program/blur",
       "inputs": [
         {
-          "sampler_name": "MainSampler",
+          "sampler_name": "DiffuseSampler",
           "target": "minecraft:main"
         }
       ],
-      "output": "swap",
+      "output": "blur_x",
       "uniforms": {
         "Config": [
           {
@@ -27,17 +29,57 @@
       "fragment_shader": "liquidglass:program/blur",
       "inputs": [
         {
-          "sampler_name": "MainSampler",
-          "target": "swap"
+          "sampler_name": "DiffuseSampler",
+          "target": "blur_x"
         }
       ],
-      "output": "minecraft:main",
+      "output": "blurred",
       "uniforms": {
         "Config": [
           {
             "type": "vec2",
             "value": [ 0.0, 1.0 ]
           }
+        ]
+      }
+    },
+    {
+      "vertex_shader": "minecraft:post/sobel",
+      "fragment_shader": "liquidglass:program/bloom",
+      "inputs": [
+        {
+          "sampler_name": "iChannel0",
+          "target": "minecraft:main"
+        },
+        {
+          "sampler_name": "iChannel1",
+          "target": "blurred"
+        }
+      ],
+      "output": "bloom"
+    },
+    {
+      "vertex_shader": "minecraft:post/sobel",
+      "fragment_shader": "liquidglass:program/liquid_glass",
+      "inputs": [
+        {
+          "sampler_name": "iChannel0",
+          "target": "minecraft:main"
+        },
+        {
+          "sampler_name": "iChannel2",
+          "target": "blurred"
+        },
+        {
+          "sampler_name": "iChannel3",
+          "target": "bloom"
+        }
+      ],
+      "output": "minecraft:main",
+      "uniforms": {
+        "CustomUniforms": [
+          { "type": "float", "value": 0.0 },
+          { "type": "vec4", "value": [0.0, 0.0, 0.0, 0.0] }
         ]
       }
     }
