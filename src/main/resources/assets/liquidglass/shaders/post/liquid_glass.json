@@ -1,0 +1,45 @@
+{
+  "targets": {
+    "swap": {}
+  },
+  "passes": [
+    {
+      "vertex_shader": "minecraft:post/sobel",
+      "fragment_shader": "liquidglass:program/blur",
+      "inputs": [
+        {
+          "sampler_name": "MainSampler",
+          "target": "minecraft:main"
+        }
+      ],
+      "output": "swap",
+      "uniforms": {
+        "Config": [
+          {
+            "type": "vec2",
+            "value": [ 1.0, 0.0 ]
+          }
+        ]
+      }
+    },
+    {
+      "vertex_shader": "minecraft:post/sobel",
+      "fragment_shader": "liquidglass:program/blur",
+      "inputs": [
+        {
+          "sampler_name": "MainSampler",
+          "target": "swap"
+        }
+      ],
+      "output": "minecraft:main",
+      "uniforms": {
+        "Config": [
+          {
+            "type": "vec2",
+            "value": [ 0.0, 1.0 ]
+          }
+        ]
+      }
+    }
+  ]
+}

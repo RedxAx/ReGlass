@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "liquidglass",
+  "version": "1.0.0",
+  "name": "Liquid Glass Demo",
+  "description": "A demonstration of a liquid glass shader in Minecraft.",
+  "authors": [
+    "RedxAx"
+  ],
+  "license": "CC0-1.0",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "restudio.demos.liquidglass.client.LiquidGlassClient"
+    ],
+    "main": [
+      "restudio.demos.liquidglass.LiquidGlass"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": ">=1.21.6",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
