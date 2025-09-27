@@ -5,12 +5,16 @@ const float SIGMA = float(SAMPLES) * 0.25;
 
 uniform sampler2D DiffuseSampler;
 
+layout(std140) uniform SamplerInfo {
+    vec2 OutSize;
+    vec2 InSize;
+};
+
 layout(std140) uniform Config {
     vec2 BlurDir;
 };
 
 in vec2 texCoord;
-in vec2 oneTexel;
 
 out vec4 fragColor;
 
@@ -23,6 +27,7 @@ float gWeight(int i)
 void main()
 {
     vec2 p = texCoord;
+    vec2 oneTexel = 1.0 / OutSize;
     vec2 delta = BlurDir * oneTexel;
     vec4  sum  = vec4(0.0);
     float acc  = 0.0;

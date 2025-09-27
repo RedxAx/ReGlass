@@ -2,17 +2,18 @@
   "targets": {
     "liquidglass:blur_x": {},
     "liquidglass:blurred": {},
-    "liquidglass:bloom_widget": {},
+    "liquidglass:bloom": {},
     "liquidglass:final_output": {}
   },
   "passes": [
     {
-      "vertex_shader": "minecraft:post/sobel",
+      "vertex_shader": "liquidglass:post/passthrough",
       "fragment_shader": "liquidglass:program/blur",
       "inputs": [
         {
           "sampler_name": "DiffuseSampler",
-          "target": "minecraft:main"
+          "target": "minecraft:main",
+          "bilinear": true
         }
       ],
       "output": "liquidglass:blur_x",
@@ -26,12 +27,13 @@
       }
     },
     {
-      "vertex_shader": "minecraft:post/sobel",
+      "vertex_shader": "liquidglass:post/passthrough",
       "fragment_shader": "liquidglass:program/blur",
       "inputs": [
         {
           "sampler_name": "DiffuseSampler",
-          "target": "liquidglass:blur_x"
+          "target": "liquidglass:blur_x",
+          "bilinear": true
         }
       ],
       "output": "liquidglass:blurred",
@@ -45,35 +47,40 @@
       }
     },
     {
-      "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/bloom_widget",
+      "vertex_shader": "liquidglass:post/passthrough",
+      "fragment_shader": "liquidglass:program/bloom",
       "inputs": [
         {
           "sampler_name": "iChannel0",
-          "target": "minecraft:main"
+          "target": "minecraft:main",
+          "bilinear": true
         },
         {
           "sampler_name": "iChannel1",
-          "target": "liquidglass:blurred"
+          "target": "liquidglass:blurred",
+          "bilinear": true
         }
       ],
-      "output": "liquidglass:bloom_widget"
+      "output": "liquidglass:bloom"
     },
     {
-      "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/liquid_glass_widget",
+      "vertex_shader": "liquidglass:post/passthrough",
+      "fragment_shader": "liquidglass:program/liquid_glass",
       "inputs": [
         {
           "sampler_name": "iChannel0",
-          "target": "minecraft:main"
+          "target": "minecraft:main",
+          "bilinear": true
         },
         {
           "sampler_name": "iChannel2",
-          "target": "liquidglass:blurred"
+          "target": "liquidglass:blurred",
+          "bilinear": true
         },
         {
           "sampler_name": "iChannel3",
-          "target": "liquidglass:bloom_widget"
+          "target": "liquidglass:bloom",
+          "bilinear": true
         }
       ],
       "output": "liquidglass:final_output",

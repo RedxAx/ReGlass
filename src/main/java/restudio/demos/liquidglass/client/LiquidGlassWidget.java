@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -41,6 +42,9 @@ import java.util.Set;
 
 public class LiquidGlassWidget implements Drawable, AutoCloseable {
     private static final Identifier SHADER_ID = Identifier.of(LiquidGlass.MOD_ID, "liquid_glass");
+    private static final Identifier BLUR_X_ID = Identifier.of(LiquidGlass.MOD_ID, "blur_x");
+    private static final Identifier BLURRED_ID = Identifier.of(LiquidGlass.MOD_ID, "blurred");
+    private static final Identifier BLOOM_ID = Identifier.of(LiquidGlass.MOD_ID, "bloom");
     private static final Identifier FINAL_OUTPUT_ID = Identifier.of(LiquidGlass.MOD_ID, "final_output");
 
     private final MinecraftClient client = MinecraftClient.getInstance();
@@ -56,6 +60,7 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
     private final int scaledHeight;
     private boolean loaded = false;
     private float time;
+    private boolean debugMode = false;
 
     public LiquidGlassWidget(int width, int height) {
         this.width = width;
@@ -66,6 +71,10 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
         load();
     }
 
+    public void toggleDebugMode() {
+        this.debugMode = !this.debugMode;
+    }
+
     private void load() {
         try {
             Identifier shaderJsonId = SHADER_ID.withPath("shaders/post/" + SHADER_ID.getPath() + ".json");
@@ -73,11 +82,12 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
             JsonElement json = JsonParser.parseReader(new InputStreamReader(resource.getInputStream()));
             PostEffectPipeline pipeline = PostEffectPipeline.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow(IOException::new);
 
-            backgroundCapture = new SimpleFramebuffer("liquidglass_capture", scaledWidth, scaledHeight, true);
-            framebuffers.put(Identifier.of("liquidglass", "blur_x"), new SimpleFramebuffer("liquidglass_blur_x", scaledWidth, scaledHeight, true));
-            framebuffers.put(Identifier.of("liquidglass", "blurred"), new SimpleFramebuffer("liquidglass_blurred", scaledWidth, scaledHeight, true));
-            framebuffers.put(Identifier.of("liquidglass", "bloom_widget"), new SimpleFramebuffer("liquidglass_bloom_widget", scaledWidth, scaledHeight, true));
-            framebuffers.put(FINAL_OUTPUT_ID, new SimpleFramebuffer("liquidglass_final", scaledWidth, scaledHeight, true));
+            backgroundCapture = new SimpleFramebuffer("liquidglass_capture", scaledWidth, scaledHeight, false);
+
+            framebuffers.put(BLUR_X_ID, new SimpleFramebuffer("liquidglass_blur_x", scaledWidth, scaledHeight, false));
+            framebuffers.put(BLURRED_ID, new SimpleFramebuffer("liquidglass_blurred", scaledWidth, scaledHeight, false));
+            framebuffers.put(BLOOM_ID, new SimpleFramebuffer("liquidglass_bloom", scaledWidth, scaledHeight, false));
+            framebuffers.put(FINAL_OUTPUT_ID, new SimpleFramebuffer("liquidglass_final", scaledWidth, scaledHeight, false));
 
             Set<Identifier> availableTargets = new HashSet<>(framebuffers.keySet());
             availableTargets.add(PostEffectProcessor.MAIN);
@@ -105,14 +115,22 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
 
     private void updateUniforms(int mouseX, int mouseY) {
         time += client.getRenderTickCounter().getDynamicDeltaTicks() / 20f;
-        Vector4f mouse = new Vector4f(mouseX, mouseY, GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS ? 1.0f : 0.0f, 0);
+        float scale = (float) client.getWindow().getScaleFactor();
+        float mouseX_pixel = mouseX * scale;
+        float mouseY_pixel = mouseY * scale;
+
+        Vector4f mouse = new Vector4f(
+                mouseX_pixel,
+                this.scaledHeight - mouseY_pixel,
+                GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS ? 1.0f : 0.0f,
+                0
+        );
+
+        if (this.customUniformsBuffer == null) return;
 
         try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(this.customUniformsBuffer, false, true)) {
             Std140Builder builder = Std140Builder.intoBuffer(view.data());
             builder.putFloat(time);
-            builder.putFloat(0.0f);
-            builder.putFloat(0.0f);
-            builder.putFloat(0.0f);
             builder.putVec4(mouse.x, mouse.y, mouse.z, mouse.w);
         }
     }
@@ -142,6 +160,15 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
 
         updateUniforms(mouseX, mouseY);
 
+        // Explicitly clear intermediate framebuffers to ensure a clean state
+        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+        for (Framebuffer fb : this.framebuffers.values()) {
+            if (fb.getColorAttachment() != null) {
+                // Clear to transparent black. The shader should then write opaque pixels.
+                encoder.clearColorTexture(fb.getColorAttachment(), 0x00000000);
+            }
+        }
+
         FrameGraphBuilder fgb = new FrameGraphBuilder();
         Pool pool = ((GameRendererAccessor)client.gameRenderer).getPool();
 
@@ -167,20 +194,60 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
         postProcessor.render(fgb, scaledWidth, scaledHeight, fboSet);
         fgb.run(pool);
 
-        GpuTextureView finalTexture = framebuffers.get(FINAL_OUTPUT_ID).getColorAttachmentView();
+        if (debugMode) {
+            renderDebugGrid(context);
+        } else {
+            GpuTextureView finalTexture = framebuffers.get(FINAL_OUTPUT_ID).getColorAttachmentView();
+            context.state.addSimpleElement(
+                    new TexturedQuadGuiElementRenderState(
+                            RenderPipelines.GUI_TEXTURED,
+                            TextureSetup.withoutGlTexture(finalTexture),
+                            new Matrix3x2f(context.getMatrices()),
+                            0, 0, this.width, this.height,
+                            0.0f, 1.0f, 1.0f, 0.0f,
+                            -1,
+                            context.scissorStack.peekLast()
+                    )
+            );
+        }
+    }
+
+    private void renderDebugGrid(DrawContext context) {
+        float halfW = width / 2f;
+        float halfH = height / 2f;
+
+        drawDebugTexture(context, backgroundCapture, "Capture", 0, 0, halfW, halfH);
+        drawDebugTexture(context, framebuffers.get(BLUR_X_ID), "Blur X", halfW, 0, halfW, halfH);
+        drawDebugTexture(context, framebuffers.get(BLURRED_ID), "Blurred", 0, halfH, halfW, halfH);
+        drawDebugTexture(context, framebuffers.get(BLOOM_ID), "Bloom", halfW, halfH, halfW, halfH);
+    }
+
+    private void drawDebugTexture(DrawContext context, Framebuffer fb, String label, float x, float y, float w, float h) {
+        if (fb == null || fb.getColorAttachmentView() == null) {
+            context.fill((int)x, (int)y, (int)(x + w), (int)(y + h), 0x80FF0000);
+            context.drawText(client.textRenderer, "NULL", (int)x + 2, (int)y + 2, 0xFFFFFFFF, true);
+            return;
+        }
+
+        GpuTextureView texture = fb.getColorAttachmentView();
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(x, y);
 
         context.state.addSimpleElement(
                 new TexturedQuadGuiElementRenderState(
                         RenderPipelines.GUI_TEXTURED,
-                        TextureSetup.withoutGlTexture(finalTexture),
+                        TextureSetup.withoutGlTexture(texture),
                         new Matrix3x2f(context.getMatrices()),
-                        0, 0, this.width, this.height,
-                        0.0f, 1.0f, 1.0f, 0.0f,
+                        0, 0, (int)w, (int)h,
+                        0.0f, 1.0f, 1.0f, 0.0f, // Flipped V for framebuffer texture
                         -1,
                         context.scissorStack.peekLast()
                 )
         );
+        context.getMatrices().popMatrix();
+        context.drawText(client.textRenderer, label, (int)x + 2, (int)y + 2, 0xFFFFFFFF, true);
     }
+
 
     @Override
     public void close() {

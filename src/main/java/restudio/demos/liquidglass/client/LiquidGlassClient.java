@@ -15,6 +15,7 @@ public class LiquidGlassClient implements ClientModInitializer {
     private LiquidGlassRenderer renderer;
     private static KeyBinding gameScreenToggle;
     private static KeyBinding widgetToggle;
+    private static KeyBinding debugToggle;
     public static MinecraftClient minecraftClient;
 
     @Override
@@ -33,6 +34,13 @@ public class LiquidGlassClient implements ClientModInitializer {
                 "Widget Based Liquid Glass",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_H,
+                "Liquid Glass"
+        ));
+
+        debugToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "Toggle Liquid Glass Debug",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_J,
                 "Liquid Glass"
         ));
 
@@ -64,6 +72,7 @@ public class LiquidGlassClient implements ClientModInitializer {
 
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+            // We call super.render to handle buttons, titles, etc., but our custom background render will prevent the default blur.
             super.render(context, mouseX, mouseY, delta);
 
             context.getMatrices().pushMatrix();
@@ -74,6 +83,20 @@ public class LiquidGlassClient implements ClientModInitializer {
             context.getMatrices().popMatrix();
         }
 
+        @Override
+        public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        }
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            if (debugToggle.matchesKey(keyCode, scanCode)) {
+                if (glassWidget != null) {
+                    glassWidget.toggleDebugMode();
+                    return true;
+                }
+            }
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
 
         @Override
         public void close() {

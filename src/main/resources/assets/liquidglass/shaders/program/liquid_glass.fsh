@@ -15,7 +15,6 @@ layout(std140) uniform CustomUniforms {
 };
 
 in vec2 texCoord;
-in vec2 oneTexel;
 out vec4 fragColor;
 
 const float EPS_PIX = 2.;
