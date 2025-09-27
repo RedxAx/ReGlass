@@ -1,8 +1,9 @@
 {
   "targets": {
-    "blur_x": {},
-    "blurred": {},
-    "bloom": {}
+    "liquidglass:blur_x": {},
+    "liquidglass:blurred": {},
+    "liquidglass:bloom_widget": {},
+    "liquidglass:final_output": {}
   },
   "passes": [
     {
@@ -14,7 +15,7 @@
           "target": "minecraft:main"
         }
       ],
-      "output": "blur_x",
+      "output": "liquidglass:blur_x",
       "uniforms": {
         "Config": [
           {
@@ -30,10 +31,10 @@
       "inputs": [
         {
           "sampler_name": "DiffuseSampler",
-          "target": "blur_x"
+          "target": "liquidglass:blur_x"
         }
       ],
-      "output": "blurred",
+      "output": "liquidglass:blurred",
       "uniforms": {
         "Config": [
           {
@@ -45,7 +46,7 @@
     },
     {
       "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/bloom",
+      "fragment_shader": "liquidglass:program/bloom_widget",
       "inputs": [
         {
           "sampler_name": "iChannel0",
@@ -53,14 +54,14 @@
         },
         {
           "sampler_name": "iChannel1",
-          "target": "blurred"
+          "target": "liquidglass:blurred"
         }
       ],
-      "output": "bloom"
+      "output": "liquidglass:bloom_widget"
     },
     {
       "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/liquid_glass",
+      "fragment_shader": "liquidglass:program/liquid_glass_widget",
       "inputs": [
         {
           "sampler_name": "iChannel0",
@@ -68,14 +69,14 @@
         },
         {
           "sampler_name": "iChannel2",
-          "target": "blurred"
+          "target": "liquidglass:blurred"
         },
         {
           "sampler_name": "iChannel3",
-          "target": "bloom"
+          "target": "liquidglass:bloom_widget"
         }
       ],
-      "output": "minecraft:main",
+      "output": "liquidglass:final_output",
       "uniforms": {
         "CustomUniforms": [
           { "type": "float", "value": 0.0 },

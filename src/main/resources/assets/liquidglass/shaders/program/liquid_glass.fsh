@@ -191,8 +191,7 @@ void main()
     vec2 UV = texCoord;
 
     float EPS = EPS_PIX / InSize.y;
-
-    vec2 p = screenToUV(gl_FragCoord.xy, InSize);
+    vec2 p = screenToUV(texCoord * InSize, InSize);
     vec3 f = field(p);
 
     Shared sh;

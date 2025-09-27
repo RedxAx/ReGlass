@@ -41,7 +41,7 @@ void main()
 
     vec2 uv = texCoord;
 
-    vec4 blurred = simpleBlur(uv, iChannel1, blurSize, InSize);
+    vec4 blurred = simpleBlur(uv, iChannel0, blurSize, InSize);
     vec4 highlight = clamp(blurred - threshold, 0.0, 1.0) * (1.0 / (1.0 - threshold)) * intensity;
 
     vec3 baseColor = texture(iChannel0, uv).rgb;

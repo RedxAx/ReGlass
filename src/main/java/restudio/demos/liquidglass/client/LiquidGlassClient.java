@@ -4,13 +4,17 @@ import me.x150.renderer.event.RenderEvents;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 public class LiquidGlassClient implements ClientModInitializer {
     private LiquidGlassRenderer renderer;
-    private static KeyBinding toggleKey;
+    private static KeyBinding gameScreenToggle;
+    private static KeyBinding widgetToggle;
     public static MinecraftClient minecraftClient;
 
     @Override
@@ -18,18 +22,66 @@ public class LiquidGlassClient implements ClientModInitializer {
         minecraftClient = MinecraftClient.getInstance();
         renderer = new LiquidGlassRenderer();
 
-        toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.liquidglass.toggle",
+        gameScreenToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "See In-Game Liquid Glass",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_G,
-                "category.liquidglass.main"
+                "Liquid Glass"
+        ));
+
+        widgetToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "Widget Based Liquid Glass",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_H,
+                "Liquid Glass"
         ));
 
         RenderEvents.HUD.register(context -> {
-            if (toggleKey.wasPressed()) {
+            if (gameScreenToggle.wasPressed()) {
                 renderer.toggle();
             }
             renderer.tick();
+            if (widgetToggle.wasPressed()) {
+                minecraftClient.setScreen(new TestScreen());
+            }
         });
+    }
+
+    private static class TestScreen extends Screen {
+        private LiquidGlassWidget glassWidget;
+
+        protected TestScreen() {
+            super(Text.literal("Glass Test"));
+        }
+
+        @Override
+        protected void init() {
+            super.init();
+            if (glassWidget == null) {
+                glassWidget = new LiquidGlassWidget(200, 200);
+            }
+        }
+
+        @Override
+        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.render(context, mouseX, mouseY, delta);
+
+            context.getMatrices().pushMatrix();
+            float widgetX = (float)this.width / 2 - 100;
+            float widgetY = (float)this.height / 2 - 100;
+            context.getMatrices().translate(widgetX, widgetY);
+            glassWidget.render(context, (int)(mouseX - widgetX), (int)(mouseY - widgetY), delta);
+            context.getMatrices().popMatrix();
+        }
+
+
+        @Override
+        public void close() {
+            if (glassWidget != null) {
+                glassWidget.close();
+                glassWidget = null;
+            }
+            super.close();
+        }
     }
 }
