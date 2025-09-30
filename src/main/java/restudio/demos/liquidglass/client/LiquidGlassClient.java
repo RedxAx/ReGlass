@@ -52,53 +52,24 @@ public class LiquidGlassClient implements ClientModInitializer {
         @Override
         protected void init() {
             super.init();
+
             addDrawableChild(ButtonWidget.builder(Text.literal("Minecraft Button"), button -> close())
                     .dimensions(width / 2 - 50, height - 30, 100, 20).build());
 
             if (glassWidget == null) {
-                glassWidget = new LiquidGlassWidget(width, height);
+                glassWidget = new LiquidGlassWidget(0, 0, 24, 24);
             }
+            addDrawableChild(glassWidget);
         }
 
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, float delta) {
             context.drawText(minecraftClient.textRenderer, Text.literal("This is a Minecraft Screen"), width / 2 - 70, 10, 0xFFFFFFFF, true);
-
-            context.getMatrices().pushMatrix();
-            float widgetX = 0;
-            float widgetY = 0;
-            context.getMatrices().translate(widgetX, widgetY);
-            glassWidget.render(context, (int)(mouseX - widgetX), (int)(mouseY - widgetY), delta);
-            context.getMatrices().popMatrix();
             super.render(context, mouseX, mouseY, delta);
         }
 
         @Override
         public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        }
-
-        @Override
-        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-            if (debugToggle.matchesKey(keyCode, scanCode)) {
-                if (glassWidget != null) {
-                    glassWidget.toggleDebugMode();
-                    return true;
-                }
-            }
-            if (widgetToggle.matchesKey(keyCode, scanCode)) {
-                close();
-                return true;
-            }
-            return super.keyPressed(keyCode, scanCode, modifiers);
-        }
-
-        @Override
-        public void close() {
-            if (glassWidget != null) {
-                glassWidget.close();
-                glassWidget = null;
-            }
-            super.close();
         }
     }
 }
