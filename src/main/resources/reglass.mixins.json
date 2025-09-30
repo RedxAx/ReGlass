@@ -12,9 +12,13 @@
   },
   "client": [
     "logical.GameRendererAccessor",
+    "logical.GlCommandEncoderMixin",
+    "logical.GlGpuBufferAccessor",
     "logical.GuiRendererMixin",
+    "logical.GuiRendererUniformsMixin",
     "logical.PostEffectPassAccessor",
     "logical.PostEffectProcessorAccessor",
+    "logical.PostEffectProcessorFramebuffersAccessor",
     "logical.PostEffectProcessorInvoker",
     "logical.ShaderLoaderAccessor",
     "widgets.ButtonMixin"

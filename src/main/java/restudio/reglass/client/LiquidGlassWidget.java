@@ -4,6 +4,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
+import org.joml.Matrix3x2f;
 
 public class LiquidGlassWidget extends ClickableWidget {
     private float cornerRadiusPx;
@@ -27,7 +28,8 @@ public class LiquidGlassWidget extends ClickableWidget {
 
     @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        LiquidGlassOverlay.get().registerWidgetRect(getX(), getY(), getWidth(), getHeight(), cornerRadiusPx);
+        Matrix3x2f pose = new Matrix3x2f().identity();
+        LiquidGlassGui.get().addBlob(context.state, pose, getX(), getY(), getWidth(), getHeight());
     }
 
     @Override

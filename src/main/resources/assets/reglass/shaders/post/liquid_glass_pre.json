@@ -1,0 +1,44 @@
+{
+  "targets": {
+    "reglass:blur_x":   { "persistent": true },
+    "reglass:blurred":  { "persistent": true },
+    "reglass:bloom":    { "persistent": true }
+  },
+  "passes": [
+    {
+      "vertex_shader": "reglass:core/blit_screen",
+      "fragment_shader": "reglass:program/blur",
+      "inputs": [
+        { "sampler_name": "Diffuse", "target": "minecraft:main", "bilinear": true }
+      ],
+      "output": "reglass:blur_x",
+      "uniforms": { "Config": [ { "type": "vec2", "value": [1.0, 0.0] } ] }
+    },
+    {
+      "vertex_shader": "reglass:core/blit_screen",
+      "fragment_shader": "reglass:program/blur",
+      "inputs": [
+        { "sampler_name": "Diffuse", "target": "reglass:blur_x", "bilinear": true }
+      ],
+      "output": "reglass:blurred",
+      "uniforms": { "Config": [ { "type": "vec2", "value": [0.0, 1.0] } ] }
+    },
+    {
+      "vertex_shader": "reglass:core/blit_screen",
+      "fragment_shader": "reglass:program/bloom",
+      "inputs": [
+        {
+          "sampler_name": "iChannel0",
+          "target": "minecraft:main",
+          "bilinear": true
+        },
+        {
+          "sampler_name": "iChannel1",
+          "target": "reglass:blurred",
+          "bilinear": true
+        }
+      ],
+      "output": "reglass:bloom"
+    }
+  ]
+}
