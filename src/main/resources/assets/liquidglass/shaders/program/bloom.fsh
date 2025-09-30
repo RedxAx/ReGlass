@@ -15,7 +15,8 @@ vec3 blendScreen(vec3 a, vec3 b) {
     return 1.0 - (1.0 - a) * (1.0 - b);
 }
 
-void main() {
+void main()
+{
     float threshold = 0.2;
     float intensity = 1.0;
 
@@ -26,5 +27,8 @@ void main() {
 
     vec3 baseColor = texture(iChannel0Sampler, uv).rgb;
 
-    fragColor = vec4(blendScreen(baseColor, highlight.rgb), 1.0);
+    fragColor = vec4(
+    blendScreen(baseColor, highlight.rgb),
+    1.0
+    );
 }

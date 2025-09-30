@@ -6,14 +6,13 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 public class LiquidGlassClient implements ClientModInitializer {
-    private LiquidGlassRenderer renderer;
-    private static KeyBinding gameScreenToggle;
     private static KeyBinding widgetToggle;
     private static KeyBinding debugToggle;
     public static MinecraftClient minecraftClient;
@@ -21,14 +20,6 @@ public class LiquidGlassClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         minecraftClient = MinecraftClient.getInstance();
-        renderer = new LiquidGlassRenderer();
-
-        gameScreenToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "See In-Game Liquid Glass",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_G,
-                "Liquid Glass"
-        ));
 
         widgetToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "Widget Based Liquid Glass",
@@ -45,10 +36,6 @@ public class LiquidGlassClient implements ClientModInitializer {
         ));
 
         RenderEvents.HUD.register(context -> {
-            if (gameScreenToggle.wasPressed()) {
-                renderer.toggle();
-            }
-            renderer.tick();
             if (widgetToggle.wasPressed()) {
                 minecraftClient.setScreen(new TestScreen());
             }
@@ -65,6 +52,9 @@ public class LiquidGlassClient implements ClientModInitializer {
         @Override
         protected void init() {
             super.init();
+            addDrawableChild(ButtonWidget.builder(Text.literal("Minecraft Button"), button -> close())
+                    .dimensions(width / 2 - 50, height - 30, 100, 20).build());
+
             if (glassWidget == null) {
                 glassWidget = new LiquidGlassWidget(width, height);
             }
@@ -72,7 +62,7 @@ public class LiquidGlassClient implements ClientModInitializer {
 
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
+            context.drawText(minecraftClient.textRenderer, Text.literal("This is a Minecraft Screen"), width / 2 - 70, 10, 0xFFFFFFFF, true);
 
             context.getMatrices().pushMatrix();
             float widgetX = 0;
@@ -80,6 +70,7 @@ public class LiquidGlassClient implements ClientModInitializer {
             context.getMatrices().translate(widgetX, widgetY);
             glassWidget.render(context, (int)(mouseX - widgetX), (int)(mouseY - widgetY), delta);
             context.getMatrices().popMatrix();
+            super.render(context, mouseX, mouseY, delta);
         }
 
         @Override

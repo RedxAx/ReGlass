@@ -23,10 +23,10 @@ const float REFR_MAG = 0.1;
 const float REFR_ABERRATION = 5.;
 const vec3 REFR_IOR = vec3(1.51, 1.52, 1.53);
 const float EDGE_DIM = .003;
-const vec4 TINT_COLOR = vec4(0, .6, 1, .5);
+const vec4 TINT_COLOR = vec4(0);
 const int BLUR_AMOUNT = 30;
 const vec2 RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
-const vec4 RIM_LIGHT_COLOR = vec4(vec3(1.), .15);
+const vec4 RIM_LIGHT_COLOR = vec4(vec3(1.),.15);
 const float REFL_OFFSET_MIN = 0.035;
 const float REFL_OFFSET_MAG = 0.005;
 const float FIELD_SMOOTHING = 0.03;
@@ -190,7 +190,8 @@ void main()
     vec2 UV = texCoord;
 
     float EPS = EPS_PIX / InSize.y;
-    vec2 p = screenToUV(texCoord * InSize, InSize);
+
+    vec2 p = screenToUV(gl_FragCoord.xy, InSize);
     vec3 f = field(p);
 
     Shared sh;
