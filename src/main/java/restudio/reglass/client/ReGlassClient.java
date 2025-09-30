@@ -1,4 +1,4 @@
-package restudio.demos.liquidglass.client;
+package restudio.reglass.client;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
@@ -13,7 +13,7 @@ import org.lwjgl.glfw.GLFW;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 
-public class LiquidGlassClient implements ClientModInitializer {
+public class ReGlassClient implements ClientModInitializer {
     private static KeyBinding widgetToggle;
     public static MinecraftClient minecraftClient;
 

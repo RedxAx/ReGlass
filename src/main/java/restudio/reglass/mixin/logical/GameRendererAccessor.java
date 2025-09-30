@@ -1,4 +1,4 @@
-package restudio.demos.liquidglass.mixin;
+package restudio.reglass.mixin.logical;
 
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.Pool;

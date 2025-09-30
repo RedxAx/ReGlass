@@ -1,4 +1,4 @@
-package restudio.demos.liquidglass.mixin;
+package restudio.reglass.mixin.logical;
 
 import net.minecraft.client.gl.ShaderLoader;
 import net.minecraft.client.render.ProjectionMatrix2;

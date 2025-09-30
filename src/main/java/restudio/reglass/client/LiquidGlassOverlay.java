@@ -1,4 +1,4 @@
-package restudio.demos.liquidglass.client;
+package restudio.reglass.client;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -21,20 +21,18 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
-import restudio.demos.liquidglass.LiquidGlass;
-import restudio.demos.liquidglass.mixin.*;
+import restudio.reglass.ReGlass;
+import restudio.reglass.mixin.logical.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class LiquidGlassOverlay {
-    private static final Identifier SHADER_ID = Identifier.of(LiquidGlass.MOD_ID, "liquid_glass_ingame");
+    private static final Identifier SHADER_ID = Identifier.of(ReGlass.MOD_ID, "liquid_glass_ingame");
     private static LiquidGlassOverlay INSTANCE;
 
     public static LiquidGlassOverlay get() {
@@ -116,7 +114,7 @@ public class LiquidGlassOverlay {
             }
             loaded = true;
         } catch (Exception e) {
-            LiquidGlass.LOGGER.error("LiquidGlassOverlay load failed", e);
+            ReGlass.LOGGER.error("LiquidGlassOverlay load failed", e);
             postProcessor = null;
             loaded = false;
         }

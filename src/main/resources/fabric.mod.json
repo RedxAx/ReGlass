@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "liquidglass",
+  "id": "reglass",
   "version": "1.0.0",
   "name": "Liquid Glass Demo",
   "description": "A demonstration of a liquid glass shader in Minecraft.",
@@ -11,14 +11,14 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "restudio.demos.liquidglass.client.LiquidGlassClient"
+      "restudio.reglass.client.ReGlassClient"
     ],
     "main": [
-      "restudio.demos.liquidglass.LiquidGlass"
+      "restudio.reglass.ReGlass"
     ]
   },
     "mixins": [
-        "liquidglass.mixins.json"
+      "reglass.mixins.json"
     ],
   "depends": {
     "fabricloader": ">=0.15.0",

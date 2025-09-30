@@ -1,5 +1,5 @@
 // File: restudio/demos/liquidglass/mixin/PostEffectProcessorInvoker.java
-package restudio.demos.liquidglass.mixin;
+package restudio.reglass.mixin.logical;
 
 import net.minecraft.client.gl.PostEffectProcessor;
 import net.minecraft.client.gl.PostEffectPipeline;

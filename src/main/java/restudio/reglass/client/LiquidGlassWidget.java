@@ -1,4 +1,4 @@
-package restudio.demos.liquidglass.client;
+package restudio.reglass.client;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;

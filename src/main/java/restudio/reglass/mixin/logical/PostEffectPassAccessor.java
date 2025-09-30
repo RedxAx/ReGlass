@@ -1,4 +1,4 @@
-package restudio.demos.liquidglass.mixin;
+package restudio.reglass.mixin.logical;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import net.minecraft.client.gl.PostEffectPass;

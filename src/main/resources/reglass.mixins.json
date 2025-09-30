@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "restudio.reglass.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  },
+  "client": [
+    "logical.GameRendererAccessor",
+    "logical.GuiRendererMixin",
+    "logical.PostEffectPassAccessor",
+    "logical.PostEffectProcessorAccessor",
+    "logical.PostEffectProcessorInvoker",
+    "logical.ShaderLoaderAccessor"
+  ]
+}

@@ -1,44 +1,44 @@
 {
   "targets": {
-    "liquidglass:blur_x": {},
-    "liquidglass:blurred": {},
-    "liquidglass:bloom": {}
+    "reglass:blur_x": {},
+    "reglass:blurred": {},
+    "reglass:bloom": {}
   },
   "passes": [
     {
       "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/blur",
+      "fragment_shader": "reglass:program/blur",
       "inputs": [
         { "sampler_name": "Diffuse", "target": "minecraft:main", "bilinear": true }
       ],
-      "output": "liquidglass:blur_x",
+      "output": "reglass:blur_x",
       "uniforms": { "Config": [ { "type": "vec2", "value": [1.0, 0.0] } ] }
     },
     {
       "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/blur",
+      "fragment_shader": "reglass:program/blur",
       "inputs": [
-        { "sampler_name": "Diffuse", "target": "liquidglass:blur_x", "bilinear": true }
+        { "sampler_name": "Diffuse", "target": "reglass:blur_x", "bilinear": true }
       ],
-      "output": "liquidglass:blurred",
+      "output": "reglass:blurred",
       "uniforms": { "Config": [ { "type": "vec2", "value": [0.0, 1.0] } ] }
     },
     {
       "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/bloom",
+      "fragment_shader": "reglass:program/bloom",
       "inputs": [
         { "sampler_name": "iChannel0", "target": "minecraft:main", "bilinear": true },
-        { "sampler_name": "iChannel1", "target": "liquidglass:blurred", "bilinear": true }
+        { "sampler_name": "iChannel1", "target": "reglass:blurred", "bilinear": true }
       ],
-      "output": "liquidglass:bloom"
+      "output": "reglass:bloom"
     },
     {
       "vertex_shader": "minecraft:post/sobel",
-      "fragment_shader": "liquidglass:program/liquid_glass",
+      "fragment_shader": "reglass:program/liquid_glass",
       "inputs": [
         { "sampler_name": "iChannel0", "target": "minecraft:main", "bilinear": true },
-        { "sampler_name": "iChannel2", "target": "liquidglass:blurred", "bilinear": true },
-        { "sampler_name": "iChannel3", "target": "liquidglass:bloom", "bilinear": true }
+        { "sampler_name": "iChannel2", "target": "reglass:blurred", "bilinear": true },
+        { "sampler_name": "iChannel3", "target": "reglass:bloom", "bilinear": true }
       ],
       "output": "minecraft:main",
       "uniforms": {
