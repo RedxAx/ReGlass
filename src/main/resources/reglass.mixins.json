@@ -20,6 +20,7 @@
     "logical.PostEffectProcessorAccessor",
     "logical.PostEffectProcessorFramebuffersAccessor",
     "logical.PostEffectProcessorInvoker",
+    "logical.RenderPassImplAccessor",
     "logical.ShaderLoaderAccessor",
     "widgets.ButtonMixin"
   ]

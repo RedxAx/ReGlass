@@ -39,7 +39,6 @@ public final class LiquidGlassPrecomputeRuntime {
     private GpuBuffer blurConfigUboX;
     private GpuBuffer blurConfigUboY;
 
-    // Shader ids we will compile
     private static final Identifier VS_ID     = Identifier.of("reglass", "core/blit_fullscreen");
     private static final Identifier BLUR_ID   = Identifier.of("reglass", "program/blur");
     private static final Identifier BLOOM_ID  = Identifier.of("reglass", "program/bloom");
@@ -149,20 +148,17 @@ public final class LiquidGlassPrecomputeRuntime {
 
         ensureTargets(w, h);
 
-        // Update SamplerInfo once per frame
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(samplerInfoUbo, false, true)) {
             Std140Builder.intoBuffer(map.data()).putVec2((float) w, (float) h).putVec2((float) w, (float) h);
         }
 
         var ce = RenderSystem.getDevice().createCommandEncoder();
 
-        // Utilities
         var quadVB = RenderSystem.getQuadVertexBuffer();
         var idxBufInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
         var ib = idxBufInfo.getIndexBuffer(6);
         var itype = idxBufInfo.getIndexType();
 
-        // Blur X: src main -> dst blurred
         try (RenderPass pass = ce.createRenderPass(() -> "reglass blur X",
                 blurredView, java.util.OptionalInt.empty())) {
             pass.setPipeline(blurPipeline);
@@ -175,7 +171,6 @@ public final class LiquidGlassPrecomputeRuntime {
             pass.drawIndexed(0, 0, 6, 1);
         }
 
-        // Blur Y: src blurred -> dst blurred (reuse)
         try (RenderPass pass = ce.createRenderPass(() -> "reglass blur Y",
                 blurredView, java.util.OptionalInt.empty())) {
             pass.setPipeline(blurPipeline);
@@ -188,7 +183,6 @@ public final class LiquidGlassPrecomputeRuntime {
             pass.drawIndexed(0, 0, 6, 1);
         }
 
-        // Bloom: src main + blurred -> dst bloom
         try (RenderPass pass = ce.createRenderPass(() -> "reglass bloom",
                 bloomView, java.util.OptionalInt.empty())) {
             pass.setPipeline(bloomPipeline);

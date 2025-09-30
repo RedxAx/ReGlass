@@ -26,8 +26,6 @@ public final class LiquidGlassPipelines {
                     .withUniform("CustomUniforms", UniformType.UNIFORM_BUFFER)
                     .withUniform("WidgetInfo", UniformType.UNIFORM_BUFFER)
                     .withSampler("Sampler0")
-                    .withSampler("Sampler1")
-                    .withSampler("Sampler2")
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withDepthWrite(false)
                     .withBlend(BlendFunction.TRANSLUCENT)

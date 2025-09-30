@@ -15,17 +15,10 @@ public class LiquidGlassGui {
         GpuTextureView main = mc.getFramebuffer().getColorAttachmentView();
         if (main == null) return;
 
-        GpuTextureView blurred = LiquidGlassPrecomputeRuntime.get().getBlurredView();
-        GpuTextureView bloom   = LiquidGlassPrecomputeRuntime.get().getBloomView();
-        if (blurred == null) blurred = main;
-        if (bloom == null)   bloom   = main;
-
-        TextureSetup textures = new TextureSetup(main, blurred, bloom);
+        TextureSetup textures = TextureSetup.withoutGlTexture(main);
 
         float radiusPx = 0.5f * Math.min(w, h);
         LiquidGlassUniforms.get().addRect(x, y, w, h, radiusPx);
-
-        // Upload immediately so Count > 0 by the time draw happens
         LiquidGlassUniforms.get().uploadWidgetInfo();
 
         LiquidGlassGuiElement elem = new LiquidGlassGuiElement(pose, x, y, w, h, textures);

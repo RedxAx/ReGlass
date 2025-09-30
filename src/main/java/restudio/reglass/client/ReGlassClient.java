@@ -59,7 +59,7 @@ public class ReGlassClient implements ClientModInitializer {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (super.mouseClicked(mouseX, mouseY, button)) return true;
             if (button == 0) {
-                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100)).setMoveable(true);
+                addDrawableChild(new LiquidGlassWidget((int) mouseX - 25, (int) mouseY - 25, 50, 50)).setMoveable(true);
             }
             return true;
         }
