@@ -44,7 +44,10 @@
       "uniforms": {
         "CustomUniforms": [
           { "type": "float", "value": 0.0 },
-          { "type": "vec4", "value": [0.0, 0.0, 0.0, 0.0] }
+          { "type": "vec4",  "value": [0.0, 0.0, 0.0, 0.0] }
+        ],
+        "WidgetInfo": [
+          { "type": "float", "value": 0.0 }
         ]
       }
     }

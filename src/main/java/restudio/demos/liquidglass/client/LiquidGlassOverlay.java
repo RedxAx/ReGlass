@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,14 +46,19 @@ public class LiquidGlassOverlay {
         return INSTANCE;
     }
 
+    private static final int MAX_WIDGETS = 9999; // What could go wrong?
+
     private final MinecraftClient client = MinecraftClient.getInstance();
     private PostEffectProcessor postProcessor;
     private GpuBuffer customUniformsBuffer;
+    private GpuBuffer widgetInfoBuffer;
     private boolean loaded = false;
     private float time;
     private final Vector4f mouse = new Vector4f();
-    private boolean hasWidgetPointer;
-    private final Vector4f widgetPointerLogical = new Vector4f();
+
+    private record Rect(float x, float y, float w, float h, float r) {}
+
+    private final List<Rect> registeredRects = new ArrayList<>();
 
     private LiquidGlassOverlay() {
         load();
@@ -95,12 +101,21 @@ public class LiquidGlassOverlay {
                     () -> "liquidglass overlay uniforms", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_MAP_WRITE, 32
             );
 
+            int widgetInfoSize = 16 * (1 + MAX_WIDGETS + MAX_WIDGETS);
+            this.widgetInfoBuffer = RenderSystem.getDevice().createBuffer(
+                    () -> "liquidglass widget info", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_MAP_WRITE, widgetInfoSize
+            );
+
             List<PostEffectPass> passes = ((PostEffectProcessorAccessor) postProcessor).getPasses();
             for (PostEffectPass pass : passes) {
                 Map<String, GpuBuffer> uniformBuffers = ((PostEffectPassAccessor) pass).getUniformBuffers();
                 if (uniformBuffers.containsKey("CustomUniforms")) {
                     uniformBuffers.get("CustomUniforms").close();
                     uniformBuffers.put("CustomUniforms", this.customUniformsBuffer);
+                }
+                if (uniformBuffers.containsKey("WidgetInfo")) {
+                    uniformBuffers.get("WidgetInfo").close();
+                    uniformBuffers.put("WidgetInfo", this.widgetInfoBuffer);
                 }
             }
             loaded = true;
@@ -111,36 +126,24 @@ public class LiquidGlassOverlay {
         }
     }
 
-    public void registerWidgetPointer(float logicalX, float logicalY, boolean pressed) {
-        widgetPointerLogical.x = logicalX;
-        widgetPointerLogical.y = logicalY;
-        widgetPointerLogical.z = pressed ? 1.0f : 0.0f;
-        widgetPointerLogical.w = 0.0f;
-        hasWidgetPointer = true;
+    public void registerWidgetRect(float logicalX, float logicalY, float logicalW, float logicalH, float cornerRadiusPx) {
+        registeredRects.add(new Rect(logicalX, logicalY, logicalW, logicalH, cornerRadiusPx));
     }
 
     private void updateUniforms() {
         time += client.getRenderTickCounter().getDynamicDeltaTicks() / 20f;
 
+        double[] mx = new double[1];
+        double[] my = new double[1];
+        GLFW.glfwGetCursorPos(client.getWindow().getHandle(), mx, my);
+
         float scale = (float) client.getWindow().getScaleFactor();
         int fbH = client.getFramebuffer().textureHeight;
 
-        if (hasWidgetPointer) {
-            float px = widgetPointerLogical.x * scale;
-            float py = widgetPointerLogical.y * scale;
-            mouse.x = px;
-            mouse.y = fbH - py;
-            mouse.z = widgetPointerLogical.z;
-            mouse.w = 0;
-        } else {
-            double[] mx = new double[1];
-            double[] my = new double[1];
-            GLFW.glfwGetCursorPos(client.getWindow().getHandle(), mx, my);
-            mouse.x = (float) (mx[0] * scale);
-            mouse.y = fbH - (float) (my[0] * scale);
-            mouse.z = GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS ? 1.0f : 0.0f;
-            mouse.w = 0;
-        }
+        mouse.x = (float) (mx[0] * scale);
+        mouse.y = fbH - (float) (my[0] * scale);
+        mouse.z = 0.0f;
+        mouse.w = 0.0f;
 
         if (customUniformsBuffer != null) {
             try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(customUniformsBuffer, false, true)) {
@@ -152,20 +155,61 @@ public class LiquidGlassOverlay {
                 b.putVec4(mouse.x, mouse.y, mouse.z, mouse.w);
             }
         }
+    }
 
-        hasWidgetPointer = false;
+    private void updateWidgetInfo() {
+        if (widgetInfoBuffer == null) return;
+
+        try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(widgetInfoBuffer, false, true)) {
+            Std140Builder b = Std140Builder.intoBuffer(view.data());
+
+            int count = Math.min(registeredRects.size(), MAX_WIDGETS);
+            b.putFloat((float) count);
+            b.putFloat(0f).putFloat(0f).putFloat(0f);
+
+            float scale = (float) client.getWindow().getScaleFactor();
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < count) {
+                    Rect r = registeredRects.get(i);
+                    float x = r.x * scale;
+                    float y = r.y * scale;
+                    float w = r.w * scale;
+                    float h = r.h * scale;
+                    b.putVec4(x, y, w, h);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < count) {
+                    Rect r = registeredRects.get(i);
+                    float rad = r.r * scale;
+                    b.putVec4(rad, rad, rad, rad);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+        }
     }
 
     public void renderAfterGui() {
         if (!loaded || postProcessor == null) return;
 
-        updateUniforms();
+        if (registeredRects.isEmpty()) {
+            return;
+        }
 
-        FrameGraphBuilder fgb = new FrameGraphBuilder();
+        updateUniforms();
+        updateWidgetInfo();
+
         Framebuffer main = client.getFramebuffer();
 
+        FrameGraphBuilder fgb = new FrameGraphBuilder();
+        Handle<Framebuffer> mainHandle = fgb.createObjectNode("main", main);
+
         PostEffectProcessor.FramebufferSet framebufferSet = new PostEffectProcessor.FramebufferSet() {
-            private Handle<Framebuffer> framebuffer = fgb.createObjectNode("main", main);
+            private Handle<Framebuffer> framebuffer = mainHandle;
 
             @Override
             public void set(Identifier id, Handle<Framebuffer> handle) {
@@ -185,5 +229,7 @@ public class LiquidGlassOverlay {
         postProcessor.render(fgb, main.textureWidth, main.textureHeight, framebufferSet);
         Pool pool = ((GameRendererAccessor) client.gameRenderer).getPool();
         fgb.run(pool);
+
+        registeredRects.clear();
     }
 }

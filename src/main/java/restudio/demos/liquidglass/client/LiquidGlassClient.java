@@ -1,8 +1,5 @@
 package restudio.demos.liquidglass.client;
 
-import me.x150.renderer.event.RenderEvents;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -12,9 +9,12 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
+import me.x150.renderer.event.RenderEvents;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+
 public class LiquidGlassClient implements ClientModInitializer {
     private static KeyBinding widgetToggle;
-    private static KeyBinding debugToggle;
     public static MinecraftClient minecraftClient;
 
     @Override
@@ -25,13 +25,6 @@ public class LiquidGlassClient implements ClientModInitializer {
                 "Widget Based Liquid Glass",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_H,
-                "Liquid Glass"
-        ));
-
-        debugToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "Toggle Liquid Glass Debug",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_J,
                 "Liquid Glass"
         ));
 
@@ -60,6 +53,14 @@ public class LiquidGlassClient implements ClientModInitializer {
                 glassWidget = new LiquidGlassWidget(0, 0, 24, 24);
             }
             addDrawableChild(glassWidget);
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (button == 0) {
+                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100));
+            }
+            return super.mouseClicked(mouseX, mouseY, button);
         }
 
         @Override

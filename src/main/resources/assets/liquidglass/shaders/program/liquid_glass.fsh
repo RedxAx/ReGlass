@@ -14,6 +14,13 @@ layout(std140) uniform CustomUniforms {
     vec4 Mouse;
 };
 
+#define MAX_WIDGETS 64
+layout(std140) uniform WidgetInfo {
+    float Count;
+    vec4 Rects[MAX_WIDGETS];
+    vec4 Rads[MAX_WIDGETS];
+};
+
 in vec2 texCoord;
 out vec4 fragColor;
 
@@ -31,13 +38,13 @@ const float REFL_OFFSET_MIN = 0.035;
 const float REFL_OFFSET_MAG = 0.005;
 const float FIELD_SMOOTHING = 0.03;
 
-#define FIELD_BLOBS
 #define PI 3.141592653589323
 
 vec3 sdgCircle( in vec2 p, in float r )
 {
     float l = length(p);
-    return vec3( l-r, p/l );
+    vec2 n = l > 1e-6 ? p / l : vec2(0.0);
+    return vec3( l-r, n );
 }
 
 vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra )
@@ -52,21 +59,18 @@ vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra )
     vec2  q = max(w,0.0);
     float l = length(q);
 
-    return vec3(   (g>0.0)?l-r: g-r,
-    s*((g>0.0)?q/l : ((w.x>w.y)?vec2(1,0):vec2(0,1))));
-}
-
-vec3 sdgBox( in vec2 p, in vec2 b, in float r )
-{
-    return sdgBox(p, b, vec4(r));
+    float dist = (g>0.0)?l-r: g-r;
+    vec2  n    = (g>0.0)? (q / max(l,1e-6)) : ((w.x>w.y)?vec2(1,0):vec2(0,1));
+    return vec3(dist, s*n);
 }
 
 vec3 sdgSMin( in vec3 a, in vec3 b, in float k )
 {
     k *= 4.0;
     float h = max( k-abs(a.x-b.x), 0.0 )/(2.0*k);
-    return vec3( min(a.x,b.x)-h*h*k,
-    mix(a.yz,b.yz,(a.x<b.x)?h:1.0-h) );
+    float d = min(a.x,b.x)-h*h*k;
+    vec2  n = normalize(mix(a.yz,b.yz,(a.x<b.x)?h:1.0-h));
+    return vec3(d, n);
 }
 
 vec3 sdgMin( in vec3 a, in vec3 b )
@@ -99,39 +103,36 @@ struct Shared {
     vec2 norm;
 };
 
-vec3 fieldBlobs(vec2 p) {
-    const float SPEED = 13.;
-    vec2 offset = .3 * vec2(
-    sin(SPEED * Time / 9.) * .5,
-    cos(SPEED * Time / 13.)
-    );
-    if (Mouse.z > 0.) {
-        offset = screenToUV(Mouse.xy, InSize);
+vec3 fieldWidgets(vec2 p) {
+    int n = int(Count + 0.5);
+    vec3 f = vec3(1e6, 0.0, 0.0);
+    bool hasAny = false;
+
+    for (int i = 0; i < MAX_WIDGETS; i++) {
+        if (i >= n) break;
+        vec4 rc = Rects[i];
+        vec4 rr = Rads[i];
+
+
+        vec2 cPx = vec2(rc.x + 0.5*rc.z, rc.y + 0.5*rc.w);
+        vec2 c = screenToUV(cPx, InSize);
+        vec2 b = 0.5 * vec2(rc.z, rc.w) / InSize.y;
+        vec4 rad = rr / InSize.y;
+        vec2 pLoc = p - c;
+
+        vec3 g = sdgBox(pLoc, b, rad);
+        if (!hasAny) {
+            f = g;
+            hasAny = true;
+        } else {
+            f = sdgSMin(f, g, FIELD_SMOOTHING);
+        }
     }
 
-    vec3 f = sdgCircle(p - offset, 0.1);
-    f = sdgSMin(f, sdgCircle(p, 0.1), FIELD_SMOOTHING);
-    f = sdgSMin(f, sdgBox(p - vec2(-.4, 0), vec2(.2, .1), .1), FIELD_SMOOTHING);
-    f = sdgSMin(f, sdgBox(p - vec2(.4, 0), vec2(.2, .1), .1), FIELD_SMOOTHING);
-
+    if (!hasAny) {
+        return vec3(1e6, 0.0, 0.0);
+    }
     return f;
-}
-
-vec3 fieldRects(vec2 p) {
-    vec3 r = sdgBox(p - vec2(-.12,0), vec2(0.5,0.1),.1);
-    vec3 c = sdgCircle(p - vec2(0.52, 0.), 0.1);
-    vec3 f = sdgMin(r,c);
-    return f;
-}
-
-vec3 field(vec2 p) {
-    #ifdef FIELD_BLOBS
-    return fieldBlobs(p);
-    #endif
-    #ifdef FIELD_RECTS
-    return fieldRects(p);
-    #endif
-    return vec3(1,0,0);
 }
 
 void refractionLayer(inout vec3 col, inout Shared s) {
@@ -191,8 +192,11 @@ void main()
 
     float EPS = EPS_PIX / InSize.y;
 
+
     vec2 p = screenToUV(gl_FragCoord.xy, InSize);
-    vec3 f = field(p);
+
+
+    vec3 f = fieldWidgets(p);
 
     Shared sh;
     sh.EPS = EPS;
@@ -201,6 +205,12 @@ void main()
     sh.f = f;
     sh.d = f.x;
     sh.norm = f.yz;
+
+
+    if (sh.d > 0.5) {
+        fragColor = vec4(texture(iChannel0Sampler, UV).rgb, 1.0);
+        return;
+    }
 
     vec3 col = vec3(0.);
 
