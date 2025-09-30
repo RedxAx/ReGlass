@@ -1,5 +1,6 @@
 package restudio.demos.liquidglass.client;
 
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -9,7 +10,6 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-import me.x150.renderer.event.RenderEvents;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 
@@ -28,15 +28,16 @@ public class LiquidGlassClient implements ClientModInitializer {
                 "Liquid Glass"
         ));
 
-        RenderEvents.HUD.register(context -> {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (widgetToggle.wasPressed()) {
-                minecraftClient.setScreen(new TestScreen());
+                client.setScreen(new TestScreen());
             }
         });
     }
 
     private static class TestScreen extends Screen {
         private LiquidGlassWidget glassWidget;
+        private boolean blur;
 
         protected TestScreen() {
             super(Text.literal("Glass Test"));
@@ -46,7 +47,7 @@ public class LiquidGlassClient implements ClientModInitializer {
         protected void init() {
             super.init();
 
-            addDrawableChild(ButtonWidget.builder(Text.literal("Minecraft Button"), button -> close())
+            addDrawableChild(ButtonWidget.builder(Text.literal("Toggle Blur"), button -> toggleBlur())
                     .dimensions(width / 2 - 50, height - 30, 100, 20).build());
 
             if (glassWidget == null) {
@@ -57,10 +58,11 @@ public class LiquidGlassClient implements ClientModInitializer {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (super.mouseClicked(mouseX, mouseY, button)) return true;
             if (button == 0) {
                 addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100)).setMoveable(true);
             }
-            return super.mouseClicked(mouseX, mouseY, button);
+            return true;
         }
 
         @Override
@@ -71,6 +73,11 @@ public class LiquidGlassClient implements ClientModInitializer {
 
         @Override
         public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+            if (blur) super.renderBackground(context, mouseX, mouseY, delta);
+        }
+
+        public void toggleBlur() {
+            blur = !blur;
         }
     }
 }

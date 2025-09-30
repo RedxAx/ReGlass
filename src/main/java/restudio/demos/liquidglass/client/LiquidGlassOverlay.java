@@ -7,9 +7,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.serialization.JsonOps;
-import me.x150.renderer.mixin.GameRendererAccessor;
-import me.x150.renderer.mixin.PostEffectPassAccessor;
-import me.x150.renderer.mixin.PostEffectProcessorAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.gl.PostEffectPass;
@@ -25,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import restudio.demos.liquidglass.LiquidGlass;
+import restudio.demos.liquidglass.mixin.*;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -85,19 +83,12 @@ public class LiquidGlassOverlay {
                     .getOrThrow(error -> new IOException("Failed to parse PostEffectPipeline JSON: " + error));
 
             var shaderLoader = client.getShaderLoader();
-            Field projectionMatrixField = shaderLoader.getClass().getDeclaredField("projectionMatrix");
-            projectionMatrixField.setAccessible(true);
-            ProjectionMatrix2 projectionMatrix = (ProjectionMatrix2) projectionMatrixField.get(shaderLoader);
+            ProjectionMatrix2 projectionMatrix = ((ShaderLoaderAccessor) shaderLoader).getProjectionMatrix();
 
-            Method parseEffectMethod = PostEffectProcessor.class.getDeclaredMethod(
-                    "parseEffect", PostEffectPipeline.class, net.minecraft.client.texture.TextureManager.class,
-                    Set.class, Identifier.class, ProjectionMatrix2.class
+            this.postProcessor = PostEffectProcessorInvoker.invokeParseEffect(
+                    pipeline, client.getTextureManager(), Set.of(PostEffectProcessor.MAIN), SHADER_ID, projectionMatrix
             );
-            parseEffectMethod.setAccessible(true);
 
-            this.postProcessor = (PostEffectProcessor) parseEffectMethod.invoke(
-                    null, pipeline, client.getTextureManager(), Set.of(PostEffectProcessor.MAIN), SHADER_ID, projectionMatrix
-            );
             if (this.postProcessor == null) {
                 throw new IllegalStateException("PostEffectProcessor.parseEffect returned null!");
             }
@@ -165,6 +156,9 @@ public class LiquidGlassOverlay {
     private void updateWidgetInfo() {
         if (widgetInfoBuffer == null) return;
 
+        int fbH = client.getFramebuffer().textureHeight;
+        float scale = (float) client.getWindow().getScaleFactor();
+
         try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(widgetInfoBuffer, false, true)) {
             Std140Builder b = Std140Builder.intoBuffer(view.data());
 
@@ -172,16 +166,19 @@ public class LiquidGlassOverlay {
             b.putFloat((float) count);
             b.putFloat(0f).putFloat(0f).putFloat(0f);
 
-            float scale = (float) client.getWindow().getScaleFactor();
-
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < count) {
                     Rect r = registeredRects.get(i);
-                    float x = r.x * scale;
-                    float y = r.y * scale;
-                    float w = r.w * scale;
-                    float h = r.h * scale;
-                    b.putVec4(x, y, w, h);
+                    float pixelX = r.x * scale;
+                    float pixelYFromTop = r.y * scale;
+                    float pixelW = r.w * scale;
+                    float pixelH = r.h * scale;
+                    float centerX = pixelX + 0.5f * pixelW;
+                    float centerYFromTop = pixelYFromTop + 0.5f * pixelH;
+                    float centerYFB = (float) fbH - centerYFromTop;
+                    float rectX = centerX - 0.5f * pixelW;
+                    float rectY = centerYFB - 0.5f * pixelH;
+                    b.putVec4(rectX, rectY, pixelW, pixelH);
                 } else {
                     b.putVec4(0f, 0f, 0f, 0f);
                 }

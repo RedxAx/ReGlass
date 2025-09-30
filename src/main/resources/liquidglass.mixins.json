@@ -11,6 +11,11 @@
     "requireAnnotations": true
   },
   "client": [
-    "GuiRendererMixin"
+    "GameRendererAccessor",
+    "GuiRendererMixin",
+    "PostEffectPassAccessor",
+    "PostEffectProcessorAccessor",
+    "PostEffectProcessorInvoker",
+    "ShaderLoaderAccessor"
   ]
 }
