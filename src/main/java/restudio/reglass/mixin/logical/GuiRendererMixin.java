@@ -10,8 +10,9 @@ import restudio.reglass.client.LiquidGlassOverlay;
 
 @Mixin(GuiRenderer.class)
 public class GuiRendererMixin {
+
     @Inject(method = "render(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", at = @At("TAIL"))
-    private void liquidglass$afterGui(GpuBufferSlice fogBuffer, CallbackInfo ci) {
+    private void reglass$afterGui(GpuBufferSlice fogBuffer, CallbackInfo ci) {
         LiquidGlassOverlay.get().renderAfterGui();
     }
 }

@@ -24,19 +24,39 @@ layout(std140) uniform WidgetInfo {
 in vec2 texCoord;
 out vec4 fragColor;
 
+// Pixel epsilon for edge smoothing, in screen pixels
 const float EPS_PIX = 2.;
+
+// Thickness of the refractive boundary (in normalized units)
 const float REFR_DIM = 0.05;
+
+// Magnitude of the refraction distortion
 const float REFR_MAG = 0.1;
+
+// Controls chromatic aberration (color separation in refraction)
 const float REFR_ABERRATION = 5.;
+
+// Index of refraction for RGB channels (simulates dispersion)
 const vec3 REFR_IOR = vec3(1.51, 1.52, 1.53);
+
+// Width of the edge highlight/dim region
 const float EDGE_DIM = .003;
+
+// Tint color and strength (RGBA, alpha is blend factor)
 const vec4 TINT_COLOR = vec4(0);
-const int BLUR_AMOUNT = 30;
+
+// Direction of rim lighting (normalized vector)
 const vec2 RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
+
+// Rim light color and intensity (RGB + alpha for strength)
 const vec4 RIM_LIGHT_COLOR = vec4(vec3(1.),.15);
+
+// Minimum and maximum offset for reflection sampling
 const float REFL_OFFSET_MIN = 0.035;
 const float REFL_OFFSET_MAG = 0.005;
-const float FIELD_SMOOTHING = 0.03;
+
+// Smoothing factor for blending widget fields
+const float FIELD_SMOOTHING = 0.003;
 
 #define PI 3.141592653589323
 

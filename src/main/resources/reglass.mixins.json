@@ -16,6 +16,7 @@
     "logical.PostEffectPassAccessor",
     "logical.PostEffectProcessorAccessor",
     "logical.PostEffectProcessorInvoker",
-    "logical.ShaderLoaderAccessor"
+    "logical.ShaderLoaderAccessor",
+    "widgets.ButtonMixin"
   ]
 }
