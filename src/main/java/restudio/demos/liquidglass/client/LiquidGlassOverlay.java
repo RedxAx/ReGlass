@@ -46,7 +46,7 @@ public class LiquidGlassOverlay {
         return INSTANCE;
     }
 
-    private static final int MAX_WIDGETS = 9999; // What could go wrong?
+    private static final int MAX_WIDGETS = 64;
 
     private final MinecraftClient client = MinecraftClient.getInstance();
     private PostEffectProcessor postProcessor;
@@ -56,7 +56,12 @@ public class LiquidGlassOverlay {
     private float time;
     private final Vector4f mouse = new Vector4f();
 
-    private record Rect(float x, float y, float w, float h, float r) {}
+    private static final class Rect {
+        final float x, y, w, h, r;
+        Rect(float x, float y, float w, float h, float r) {
+            this.x = x; this.y = y; this.w = w; this.h = h; this.r = r;
+        }
+    }
 
     private final List<Rect> registeredRects = new ArrayList<>();
 

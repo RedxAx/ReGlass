@@ -58,7 +58,7 @@ public class LiquidGlassClient implements ClientModInitializer {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (button == 0) {
-                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100));
+                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100)).setMoveable(true);
             }
             return super.mouseClicked(mouseX, mouseY, button);
         }
