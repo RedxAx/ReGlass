@@ -1,8 +1,8 @@
 #version 150
 
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel2;
-uniform sampler2D iChannel3;
+uniform sampler2D iChannel0Sampler;
+uniform sampler2D iChannel2Sampler;
+uniform sampler2D iChannel3Sampler;
 
 layout(std140) uniform SamplerInfo {
     vec2 OutSize;
@@ -26,7 +26,7 @@ const float EDGE_DIM = .003;
 const vec4 TINT_COLOR = vec4(0, .6, 1, .5);
 const int BLUR_AMOUNT = 30;
 const vec2 RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
-const vec4 RIM_LIGHT_COLOR = vec4(vec3(1.),.15);
+const vec4 RIM_LIGHT_COLOR = vec4(vec3(1.), .15);
 const float REFL_OFFSET_MIN = 0.035;
 const float REFL_OFFSET_MAG = 0.005;
 const float FIELD_SMOOTHING = 0.03;
@@ -153,11 +153,11 @@ void refractionLayer(inout vec3 col, inout Shared s) {
     vec2 offsetG = offset * ratios.g;
     vec2 offsetB = offset * ratios.b;
 
-    vec3 baseColor = texture(iChannel0, s.UV).rgb;
+    vec3 baseColor = texture(iChannel0Sampler, s.UV).rgb;
 
-    float r = texture(iChannel2, s.UV + offsetR).r;
-    float g = texture(iChannel2, s.UV + offsetG).g;
-    float b = texture(iChannel2, s.UV + offsetB).b;
+    float r = texture(iChannel2Sampler, s.UV + offsetR).r;
+    float g = texture(iChannel2Sampler, s.UV + offsetG).g;
+    float b = texture(iChannel2Sampler, s.UV + offsetB).b;
     vec3 blurWarped = vec3(r,g,b);
 
     col = mix(baseColor, blurWarped, smoothstep(s.EPS, 0., s.d));
@@ -177,7 +177,7 @@ void tintLayer(inout vec3 col, inout Shared s) {
     vec3 rimLight = RIM_LIGHT_COLOR.rgb * RIM_LIGHT_COLOR.a * rimLightIntensity;
 
     vec2 reflectionOffset = (REFL_OFFSET_MIN + REFL_OFFSET_MAG * cosEdge) * s.norm;
-    vec3 reflectionColor = clamp(texture(iChannel3, s.UV + reflectionOffset).rgb, 0., 1.);
+    vec3 reflectionColor = clamp(texture(iChannel3Sampler, s.UV + reflectionOffset).rgb, 0., 1.);
     reflectionColor = mix(reflectionColor, TINT_COLOR.rgb, TINT_COLOR.a);
 
     vec3 mergedEdgeColor = blendScreen(rimLight, reflectionColor);

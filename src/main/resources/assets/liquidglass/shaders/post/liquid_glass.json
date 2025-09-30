@@ -2,8 +2,7 @@
   "targets": {
     "liquidglass:blur_x": {},
     "liquidglass:blurred": {},
-    "liquidglass:bloom": {},
-    "liquidglass:final_output": {}
+    "liquidglass:bloom": {}
   },
   "passes": [
     {
@@ -11,7 +10,7 @@
       "fragment_shader": "liquidglass:program/blur",
       "inputs": [
         {
-          "sampler_name": "DiffuseSampler",
+          "sampler_name": "Diffuse",
           "target": "minecraft:main",
           "bilinear": true
         }
@@ -19,10 +18,7 @@
       "output": "liquidglass:blur_x",
       "uniforms": {
         "Config": [
-          {
-            "type": "vec2",
-            "value": [ 1.0, 0.0 ]
-          }
+          { "type": "vec2", "value": [1.0, 0.0] }
         ]
       }
     },
@@ -31,7 +27,7 @@
       "fragment_shader": "liquidglass:program/blur",
       "inputs": [
         {
-          "sampler_name": "DiffuseSampler",
+          "sampler_name": "Diffuse",
           "target": "liquidglass:blur_x",
           "bilinear": true
         }
@@ -39,10 +35,7 @@
       "output": "liquidglass:blurred",
       "uniforms": {
         "Config": [
-          {
-            "type": "vec2",
-            "value": [ 0.0, 1.0 ]
-          }
+          { "type": "vec2", "value": [0.0, 1.0] }
         ]
       }
     },
@@ -83,7 +76,7 @@
           "bilinear": true
         }
       ],
-      "output": "liquidglass:final_output",
+      "output": "minecraft:main",
       "uniforms": {
         "CustomUniforms": [
           { "type": "float", "value": 0.0 },

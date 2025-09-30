@@ -66,18 +66,17 @@ public class LiquidGlassClient implements ClientModInitializer {
         protected void init() {
             super.init();
             if (glassWidget == null) {
-                glassWidget = new LiquidGlassWidget(200, 200);
+                glassWidget = new LiquidGlassWidget(width, height);
             }
         }
 
         @Override
         public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-            // We call super.render to handle buttons, titles, etc., but our custom background render will prevent the default blur.
             super.render(context, mouseX, mouseY, delta);
 
             context.getMatrices().pushMatrix();
-            float widgetX = (float)this.width / 2 - 100;
-            float widgetY = (float)this.height / 2 - 100;
+            float widgetX = 0;
+            float widgetY = 0;
             context.getMatrices().translate(widgetX, widgetY);
             glassWidget.render(context, (int)(mouseX - widgetX), (int)(mouseY - widgetY), delta);
             context.getMatrices().popMatrix();
@@ -94,6 +93,10 @@ public class LiquidGlassClient implements ClientModInitializer {
                     glassWidget.toggleDebugMode();
                     return true;
                 }
+            }
+            if (widgetToggle.matchesKey(keyCode, scanCode)) {
+                close();
+                return true;
             }
             return super.keyPressed(keyCode, scanCode, modifiers);
         }

@@ -13,7 +13,13 @@ import me.x150.renderer.mixin.GameRendererAccessor;
 import me.x150.renderer.mixin.PostEffectPassAccessor;
 import me.x150.renderer.mixin.PostEffectProcessorAccessor;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.*;
+import net.minecraft.client.gl.Framebuffer;
+import net.minecraft.client.gl.PostEffectPass;
+import net.minecraft.client.gl.PostEffectPipeline;
+import net.minecraft.client.gl.PostEffectProcessor;
+import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gl.ShaderLoader;
+import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.render.state.TexturedQuadGuiElementRenderState;
@@ -83,7 +89,6 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
             PostEffectPipeline pipeline = PostEffectPipeline.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow(IOException::new);
 
             backgroundCapture = new SimpleFramebuffer("liquidglass_capture", scaledWidth, scaledHeight, false);
-
             framebuffers.put(BLUR_X_ID, new SimpleFramebuffer("liquidglass_blur_x", scaledWidth, scaledHeight, false));
             framebuffers.put(BLURRED_ID, new SimpleFramebuffer("liquidglass_blurred", scaledWidth, scaledHeight, false));
             framebuffers.put(BLOOM_ID, new SimpleFramebuffer("liquidglass_bloom", scaledWidth, scaledHeight, false));
@@ -92,11 +97,15 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
             Set<Identifier> availableTargets = new HashSet<>(framebuffers.keySet());
             availableTargets.add(PostEffectProcessor.MAIN);
 
-            Method parseEffectMethod = PostEffectProcessor.class.getDeclaredMethod("parseEffect", PostEffectPipeline.class, TextureManager.class, Set.class, Identifier.class, ProjectionMatrix2.class);
+            Method parseEffectMethod = PostEffectProcessor.class.getDeclaredMethod(
+                    "parseEffect", PostEffectPipeline.class, TextureManager.class, Set.class, Identifier.class, ProjectionMatrix2.class
+            );
             parseEffectMethod.setAccessible(true);
             Field projectionMatrixField = ShaderLoader.class.getDeclaredField("projectionMatrix");
             projectionMatrixField.setAccessible(true);
-            this.postProcessor = (PostEffectProcessor) parseEffectMethod.invoke(null, pipeline, client.getTextureManager(), availableTargets, SHADER_ID, projectionMatrixField.get(client.getShaderLoader()));
+            this.postProcessor = (PostEffectProcessor) parseEffectMethod.invoke(
+                    null, pipeline, client.getTextureManager(), availableTargets, SHADER_ID, projectionMatrixField.get(client.getShaderLoader())
+            );
 
             this.customUniformsBuffer = RenderSystem.getDevice().createBuffer(() -> "liquidglass:customs", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_MAP_WRITE, 32);
             for (PostEffectPass pass : ((PostEffectProcessorAccessor) postProcessor).getPasses()) {
@@ -118,19 +127,17 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
         float scale = (float) client.getWindow().getScaleFactor();
         float mouseX_pixel = mouseX * scale;
         float mouseY_pixel = mouseY * scale;
-
-        Vector4f mouse = new Vector4f(
-                mouseX_pixel,
-                this.scaledHeight - mouseY_pixel,
-                GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS ? 1.0f : 0.0f,
-                0
-        );
+        Vector4f mouse = new Vector4f(mouseX_pixel, this.scaledHeight - mouseY_pixel, GLFW.glfwGetMouseButton(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS ? 1.0f : 0.0f, 0);
 
         if (this.customUniformsBuffer == null) return;
 
-        try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(this.customUniformsBuffer, false, true)) {
+        CommandEncoder enc = RenderSystem.getDevice().createCommandEncoder();
+        try (GpuBuffer.MappedView view = enc.mapBuffer(this.customUniformsBuffer, false, true)) {
             Std140Builder builder = Std140Builder.intoBuffer(view.data());
             builder.putFloat(time);
+            builder.putFloat(0.0f);
+            builder.putFloat(0.0f);
+            builder.putFloat(0.0f);
             builder.putVec4(mouse.x, mouse.y, mouse.z, mouse.w);
         }
     }
@@ -147,34 +154,41 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
         float scale = (float) client.getWindow().getScaleFactor();
 
         Matrix3x2f transform = context.getMatrices();
-        int sx = (int)(transform.m20 * scale);
-        int sy = (int)(clientFb.textureHeight - (transform.m21 * scale + this.scaledHeight));
+        int widgetX_pixels = Math.round(transform.m20() * scale);
+        int widgetY_pixels = Math.round(transform.m21() * scale);
+
+        int scaledGuiW = client.getWindow().getScaledWidth();
+        int scaledGuiH = client.getWindow().getScaledHeight();
+
+        int srcX = widgetX_pixels;
+        int srcY = (scaledGuiH * (int) scale) - (widgetY_pixels + this.scaledHeight);
 
         GpuTexture sourceTexture = clientFb.getColorAttachment();
         GpuTexture destTexture = backgroundCapture.getColorAttachment();
-        if(sourceTexture != null && destTexture != null) {
-            RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(
-                    sourceTexture, destTexture, 0, 0, 0, sx, sy, this.scaledWidth, this.scaledHeight
-            );
+        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+        if (sourceTexture != null && destTexture != null) {
+            encoder.copyTextureToTexture(sourceTexture, destTexture, 0, 0, 0, srcX, srcY, this.scaledWidth, this.scaledHeight);
         }
 
         updateUniforms(mouseX, mouseY);
 
-        // Explicitly clear intermediate framebuffers to ensure a clean state
-        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         for (Framebuffer fb : this.framebuffers.values()) {
             if (fb.getColorAttachment() != null) {
-                // Clear to transparent black. The shader should then write opaque pixels.
                 encoder.clearColorTexture(fb.getColorAttachment(), 0x00000000);
             }
         }
 
+        GpuTextureView prevC = RenderSystem.outputColorTextureOverride;
+        GpuTextureView prevD = RenderSystem.outputDepthTextureOverride;
+        RenderSystem.outputColorTextureOverride = null;
+        RenderSystem.outputDepthTextureOverride = null;
+
         FrameGraphBuilder fgb = new FrameGraphBuilder();
-        Pool pool = ((GameRendererAccessor)client.gameRenderer).getPool();
+        Pool pool = ((GameRendererAccessor) client.gameRenderer).getPool();
 
         Map<Identifier, Handle<Framebuffer>> graphHandles = new HashMap<>();
         graphHandles.put(PostEffectProcessor.MAIN, fgb.createObjectNode("background_capture", backgroundCapture));
-        for(Map.Entry<Identifier, Framebuffer> entry : this.framebuffers.entrySet()) {
+        for (Map.Entry<Identifier, Framebuffer> entry : this.framebuffers.entrySet()) {
             graphHandles.put(entry.getKey(), fgb.createObjectNode(entry.getKey().toString(), entry.getValue()));
         }
 
@@ -194,28 +208,28 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
         postProcessor.render(fgb, scaledWidth, scaledHeight, fboSet);
         fgb.run(pool);
 
+        RenderSystem.outputColorTextureOverride = prevC;
+        RenderSystem.outputDepthTextureOverride = prevD;
+
         if (debugMode) {
             renderDebugGrid(context);
         } else {
             GpuTextureView finalTexture = framebuffers.get(FINAL_OUTPUT_ID).getColorAttachmentView();
-            context.state.addSimpleElement(
-                    new TexturedQuadGuiElementRenderState(
-                            RenderPipelines.GUI_TEXTURED,
-                            TextureSetup.withoutGlTexture(finalTexture),
-                            new Matrix3x2f(context.getMatrices()),
-                            0, 0, this.width, this.height,
-                            0.0f, 1.0f, 1.0f, 0.0f,
-                            -1,
-                            context.scissorStack.peekLast()
-                    )
-            );
+            context.state.addSimpleElement(new TexturedQuadGuiElementRenderState(
+                    RenderPipelines.GUI_TEXTURED,
+                    TextureSetup.withoutGlTexture(finalTexture),
+                    new Matrix3x2f(context.getMatrices()),
+                    0, 0, this.width, this.height,
+                    0.0f, 1.0f, 1.0f, 0.0f,
+                    -1,
+                    context.scissorStack.peekLast()
+            ));
         }
     }
 
     private void renderDebugGrid(DrawContext context) {
         float halfW = width / 2f;
         float halfH = height / 2f;
-
         drawDebugTexture(context, backgroundCapture, "Capture", 0, 0, halfW, halfH);
         drawDebugTexture(context, framebuffers.get(BLUR_X_ID), "Blur X", halfW, 0, halfW, halfH);
         drawDebugTexture(context, framebuffers.get(BLURRED_ID), "Blurred", 0, halfH, halfW, halfH);
@@ -224,30 +238,25 @@ public class LiquidGlassWidget implements Drawable, AutoCloseable {
 
     private void drawDebugTexture(DrawContext context, Framebuffer fb, String label, float x, float y, float w, float h) {
         if (fb == null || fb.getColorAttachmentView() == null) {
-            context.fill((int)x, (int)y, (int)(x + w), (int)(y + h), 0x80FF0000);
-            context.drawText(client.textRenderer, "NULL", (int)x + 2, (int)y + 2, 0xFFFFFFFF, true);
+            context.fill((int) x, (int) y, (int) (x + w), (int) (y + h), 0x80FF0000);
+            context.drawText(client.textRenderer, "NULL", (int) x + 2, (int) y + 2, 0xFFFFFFFF, true);
             return;
         }
-
         GpuTextureView texture = fb.getColorAttachmentView();
         context.getMatrices().pushMatrix();
         context.getMatrices().translate(x, y);
-
-        context.state.addSimpleElement(
-                new TexturedQuadGuiElementRenderState(
-                        RenderPipelines.GUI_TEXTURED,
-                        TextureSetup.withoutGlTexture(texture),
-                        new Matrix3x2f(context.getMatrices()),
-                        0, 0, (int)w, (int)h,
-                        0.0f, 1.0f, 1.0f, 0.0f, // Flipped V for framebuffer texture
-                        -1,
-                        context.scissorStack.peekLast()
-                )
-        );
+        context.state.addSimpleElement(new TexturedQuadGuiElementRenderState(
+                RenderPipelines.GUI_TEXTURED,
+                TextureSetup.withoutGlTexture(texture),
+                new Matrix3x2f(context.getMatrices()),
+                0, 0, (int) w, (int) h,
+                0.0f, 1.0f, 1.0f, 0.0f,
+                -1,
+                context.scissorStack.peekLast()
+        ));
         context.getMatrices().popMatrix();
-        context.drawText(client.textRenderer, label, (int)x + 2, (int)y + 2, 0xFFFFFFFF, true);
+        context.drawText(client.textRenderer, label, (int) x + 2, (int) y + 2, 0xFFFFFFFF, true);
     }
-
 
     @Override
     public void close() {
