@@ -15,7 +15,12 @@ public class LiquidGlassGui {
         GpuTextureView main = mc.getFramebuffer().getColorAttachmentView();
         if (main == null) return;
 
-        TextureSetup textures = TextureSetup.withoutGlTexture(main);
+        GpuTextureView blurred = LiquidGlassPrecomputeRuntime.get().getBlurredView();
+        GpuTextureView bloom = LiquidGlassPrecomputeRuntime.get().getBloomView();
+
+        if (blurred == null || bloom == null) return;
+
+        TextureSetup textures = new TextureSetup(main, blurred, bloom);
 
         float radiusPx = 0.5f * Math.min(w, h);
         LiquidGlassUniforms.get().addRect(x, y, w, h, radiusPx);

@@ -6,15 +6,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import restudio.reglass.client.LiquidGlassUniforms;
 
 @Mixin(GuiRenderer.class)
 public class GuiRendererUniformsMixin {
-
-    @Inject(method = "render(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", at = @At("HEAD"))
-    private void reglass$beforeGui(GpuBufferSlice fogBuffer, CallbackInfo ci) {
-        LiquidGlassUniforms.get().beginFrame();
-    }
 
     @Inject(method = "renderPreparedDraws", at = @At("HEAD"))
     private void reglass$uploadWidgetsBeforeDraw(GpuBufferSlice dynamic, CallbackInfo ci) {
