@@ -12,19 +12,37 @@ layout(std140) uniform WidgetInfo { float Count; vec4 Rects[MAX_WIDGETS]; vec4 R
 in vec2 texCoord;
 out vec4 fragColor;
 
-const float EPS_PIX = 2.;
 const float REFR_DIM = 0.05;
 const float REFR_MAG = 0.1;
+const float EDGE_DIM = .003;
+const float REFL_OFFSET_MIN = 0.035;
+const float REFL_OFFSET_MAG = 0.005;
+
+const float MIN_REFR_DIM = 0.02;
+const float MIN_REFR_MAG = 0.02;
+const float MIN_EDGE_DIM = .001;
+const float MIN_REFL_OFFSET_MIN = 0.01;
+const float MIN_REFL_OFFSET_MAG = 0.001;
+
+const float EPS_PIX = 2.;
 const float REFR_ABERRATION = 5.;
 const vec3  REFR_IOR = vec3(1.51, 1.52, 1.53);
-const float EDGE_DIM = .003;
 const vec4  TINT_COLOR = vec4(0);
 const vec2  RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
 const vec4  RIM_LIGHT_COLOR = vec4(vec3(1.), .15);
-const float REFL_OFFSET_MIN = 0.035;
-const float REFL_OFFSET_MAG = 0.005;
 const float FIELD_SMOOTHING = 0.003;
 #define PI 3.141592653589793
+
+struct SDFResult {
+    float dist;
+    vec2 normal;
+    float aspect;
+};
+
+float lerp(float minV, float maxV, float v) { return clamp((v - minV) / (maxV - minV), 0., 1.); }
+vec2 screenToUV(vec2 screen, vec2 res) { return (screen.xy - .5 * res.xy) / res.y; }
+vec3 blendScreen(vec3 a, vec3 b) { return 1. - (1. - a) * (1. - b); }
+vec3 blendLighten(vec3 a, vec3 b) { return max(a, b); }
 
 vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra ) {
     ra.xy   = (p.x>0.0)?ra.xy : ra.zw;
@@ -38,51 +56,65 @@ vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra ) {
     vec2  n    = (g>0.0)? (q / max(l,1e-6)) : ((w.x>w.y)?vec2(1,0):vec2(0,1));
     return vec3(dist, s*n);
 }
-vec3 sdgSMin( in vec3 a, in vec3 b, in float k ) {
+
+SDFResult sdgSMin( in SDFResult a, in SDFResult b, in float k ) {
     k *= 4.0;
-    float h = max( k-abs(a.x-b.x), 0.0 )/(2.0*k);
-    float d = min(a.x,b.x)-h*h*k;
-    vec2  n = normalize(mix(a.yz,b.yz,(a.x<b.x)?h:1.0-h));
-    return vec3(d, n);
+    float h = max( k-abs(a.dist-b.dist), 0.0 )/(2.0*k);
+    float d = min(a.dist,b.dist)-h*h*k;
+    vec2  n = normalize(mix(a.normal,b.normal,(a.dist<b.dist)?h:1.0-h));
+    float aspect = mix(a.aspect, b.aspect, (a.dist<b.dist)?h:1.0-h);
+    return SDFResult(d, n, aspect);
 }
-float lerp(float minV, float maxV, float v) {
-    return clamp((v - minV) / (maxV - minV), 0., 1.);
-}
-vec2 screenToUV(vec2 screen, vec2 res) {
-    return (screen.xy - .5 * res.xy) / res.y;
-}
-vec3 blendScreen(vec3 a, vec3 b) {
-    return 1. - (1. - a) * (1. - b);
-}
-vec3 blendLighten(vec3 a, vec3 b) {
-    return max(a, b);
-}
-struct Shared { float EPS; vec2 p; vec2 UV; vec3 f; float d; vec2 norm; };
-vec3 fieldWidgets(vec2 p, vec2 inSize) {
+
+SDFResult fieldWidgets(vec2 p, vec2 inSize) {
     int n = int(Count + 0.5);
-    vec3 f = vec3(1e6, 0.0, 0.0);
+    SDFResult f = SDFResult(1e6, vec2(0.0), 1.0);
     bool hasAny = false;
+
     for (int i = 0; i < MAX_WIDGETS; i++) {
         if (i >= n) break;
-        vec4 rc = Rects[i]; vec4 rr = Rads[i];
+        vec4 rc = Rects[i];
+        vec4 rr = Rads[i];
+
         vec2 cPx = vec2(rc.x + 0.5*rc.z, rc.y + 0.5*rc.w);
         vec2 c = screenToUV(cPx, inSize);
         vec2 b = 0.5 * vec2(rc.z, rc.w) / inSize.y;
         vec4 rad = rr / inSize.y;
         vec2 pLoc = p - c;
-        vec3 g = sdgBox(pLoc, b, rad);
-        if (!hasAny) { f = g; hasAny = true; } else { f = sdgSMin(f, g, FIELD_SMOOTHING); }
+
+        vec3 g_vec = sdgBox(pLoc, b, rad);
+
+        float aspect = min(rc.z, rc.w) / max(rc.z, rc.w);
+        SDFResult g = SDFResult(g_vec.x, g_vec.yz, aspect);
+
+        if (!hasAny) {
+            f = g;
+            hasAny = true;
+        } else {
+            f = sdgSMin(f, g, FIELD_SMOOTHING);
+        }
     }
-    if (!hasAny) return vec3(1e6, 0.0, 0.0);
     return f;
 }
 
+struct Shared {
+    float EPS;
+    vec2 p;
+    vec2 UV;
+    SDFResult f;
+    float dynamicRefrDim;
+    float dynamicRefrMag;
+    float dynamicEdgeDim;
+    float dynamicReflOffsetMin;
+    float dynamicReflOffsetMag;
+};
+
 void baseLayer(out vec3 col, in Shared s) {
-    float boundary = lerp(-REFR_DIM, s.EPS, s.d);
-    boundary = mix(boundary, 0., smoothstep(0.,s.EPS,s.d));
+    float boundary = lerp(-s.dynamicRefrDim, s.EPS, s.f.dist);
+    boundary = mix(boundary, 0., smoothstep(0.,s.EPS,s.f.dist));
     float cosBoundary = 1.0 - cos(boundary * PI / 2.0);
     vec3 ior = mix(vec3(REFR_IOR.g), REFR_IOR, REFR_ABERRATION);
-    vec2 offset = -s.norm * REFR_MAG;
+    vec2 offset = -s.f.normal * s.dynamicRefrMag;
     vec3 ratios = pow(vec3(cosBoundary), ior);
     vec2 offsetR = offset * ratios.r;
     vec2 offsetG = offset * ratios.g;
@@ -91,20 +123,19 @@ void baseLayer(out vec3 col, in Shared s) {
     float r = texture(Sampler1, s.UV + offsetR).r;
     float g = texture(Sampler1, s.UV + offsetG).g;
     float b = texture(Sampler1, s.UV + offsetB).b;
-
     col = vec3(r,g,b);
 }
 
 void tintLayer(inout vec3 col, in Shared s) {
-    float interior = smoothstep(s.EPS, 0., s.d);
+    float interior = smoothstep(s.EPS, 0., s.f.dist);
     col = mix(col, TINT_COLOR.rgb, TINT_COLOR.a * interior);
-    float a = smoothstep(s.EPS, 0., s.d);
-    float b = lerp(-EDGE_DIM, 0., s.d);
+    float a = smoothstep(s.EPS, 0., s.f.dist);
+    float b = lerp(-s.dynamicEdgeDim, 0., s.f.dist);
     float edge = min(a, b);
     float cosEdge = 1. - cos(edge * PI / 2.);
-    float rimLightIntensity = abs(dot(normalize(s.norm), RIM_LIGHT_VEC));
+    float rimLightIntensity = abs(dot(normalize(s.f.normal), RIM_LIGHT_VEC));
     vec3 rimLight = RIM_LIGHT_COLOR.rgb * RIM_LIGHT_COLOR.a * rimLightIntensity;
-    vec2 reflectionOffset = (REFL_OFFSET_MIN + REFL_OFFSET_MAG * cosEdge) * s.norm;
+    vec2 reflectionOffset = (s.dynamicReflOffsetMin + s.dynamicReflOffsetMag * cosEdge) * s.f.normal;
 
     vec3 reflectionColor = clamp(texture(Sampler2, s.UV + reflectionOffset).rgb, 0., 1.);
     reflectionColor = mix(reflectionColor, TINT_COLOR.rgb, TINT_COLOR.a);
@@ -120,20 +151,27 @@ void main()
     vec2 UV = gl_FragCoord.xy / inSize;
     float EPS = EPS_PIX / inSize.y;
     vec2 p = screenToUV(gl_FragCoord.xy, inSize);
-    vec3 f = fieldWidgets(p, inSize);
 
-    Shared sh;
-    sh.EPS = EPS; sh.p = p; sh.UV = UV; sh.f = f; sh.d = f.x; sh.norm = f.yz;
+    SDFResult f = fieldWidgets(p, inSize);
 
-    float opacity = smoothstep(sh.EPS, -sh.EPS, sh.d);
+    float opacity = smoothstep(EPS, -EPS, f.dist);
     if (opacity <= 0.0) {
         fragColor = vec4(0.0);
         return;
     }
 
+    Shared sh;
+    sh.EPS = EPS; sh.p = p; sh.UV = UV; sh.f = f;
+
+    float aspectFactor = f.aspect;
+    sh.dynamicRefrDim = mix(MIN_REFR_DIM, REFR_DIM, aspectFactor);
+    sh.dynamicRefrMag = mix(MIN_REFR_MAG, REFR_MAG, aspectFactor);
+    sh.dynamicEdgeDim = mix(MIN_EDGE_DIM, EDGE_DIM, aspectFactor);
+    sh.dynamicReflOffsetMin = mix(MIN_REFL_OFFSET_MIN, REFL_OFFSET_MIN, aspectFactor);
+    sh.dynamicReflOffsetMag = mix(MIN_REFL_OFFSET_MAG, REFL_OFFSET_MAG, aspectFactor);
+
     vec3 col;
     baseLayer(col, sh);
-
     tintLayer(col, sh);
 
     fragColor = vec4(col * opacity, opacity);

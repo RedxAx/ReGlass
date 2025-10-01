@@ -1,6 +1,6 @@
 #version 150
 
-const int SAMPLES = 30;
+const int SAMPLES = 8;
 const float SIGMA = float(SAMPLES) * 0.25;
 
 uniform sampler2D DiffuseSampler;
