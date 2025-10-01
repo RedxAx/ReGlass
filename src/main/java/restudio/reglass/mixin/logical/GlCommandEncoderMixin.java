@@ -14,12 +14,9 @@ public class GlCommandEncoderMixin {
 
     @Inject(method = "setupRenderPass", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/opengl/GlStateManager;_glUseProgram(I)V", shift = At.Shift.AFTER))
     private void reglass$attachUboToPass(RenderPassImpl pass, Collection<String> skippedUniforms, CallbackInfoReturnable<Boolean> cir) {
-        var pipeline = ((RenderPassImplAccessor) pass).reglass$getPipeline();
-        if (pipeline != null && "reglass".equals(pipeline.info().getLocation().getNamespace())) {
-            var u = LiquidGlassUniforms.get();
-            pass.setUniform("SamplerInfo", u.getSamplerInfoBuffer());
-            pass.setUniform("CustomUniforms", u.getCustomUniformsBuffer());
-            pass.setUniform("WidgetInfo", u.getWidgetInfoBuffer());
-        }
+        var u = LiquidGlassUniforms.get();
+        pass.setUniform("SamplerInfo",   u.getSamplerInfoBuffer());
+        pass.setUniform("CustomUniforms",u.getCustomUniformsBuffer());
+        pass.setUniform("WidgetInfo",    u.getWidgetInfoBuffer());
     }
 }

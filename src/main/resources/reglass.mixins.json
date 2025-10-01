@@ -11,17 +11,11 @@
     "requireAnnotations": true
   },
   "client": [
-    "logical.GameRendererAccessor",
     "logical.GlCommandEncoderMixin",
     "logical.GlGpuBufferAccessor",
     "logical.GuiRendererMixin",
     "logical.GuiRendererUniformsMixin",
-    "logical.PostEffectPassAccessor",
-    "logical.PostEffectProcessorAccessor",
-    "logical.PostEffectProcessorFramebuffersAccessor",
-    "logical.PostEffectProcessorInvoker",
     "logical.RenderPassImplAccessor",
-    "logical.ShaderLoaderAccessor",
     "widgets.ButtonMixin"
   ]
 }

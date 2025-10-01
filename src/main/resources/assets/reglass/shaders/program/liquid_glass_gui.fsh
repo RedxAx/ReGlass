@@ -1,8 +1,6 @@
 #version 150
 
-uniform sampler2D iChannel0Sampler;
-uniform sampler2D iChannel2Sampler;
-uniform sampler2D iChannel3Sampler;
+uniform sampler2D Sampler0;
 
 layout(std140) uniform SamplerInfo {
     vec2 OutSize;
@@ -24,78 +22,40 @@ layout(std140) uniform WidgetInfo {
 in vec2 texCoord;
 out vec4 fragColor;
 
-// Pixel epsilon for edge smoothing, in screen pixels
 const float EPS_PIX = 2.;
-
-// Thickness of the refractive boundary (in normalized units)
 const float REFR_DIM = 0.05;
-
-// Magnitude of the refraction distortion
 const float REFR_MAG = 0.1;
-
-// Controls chromatic aberration (color separation in refraction)
 const float REFR_ABERRATION = 5.;
-
-// Index of refraction for RGB channels (simulates dispersion)
-const vec3 REFR_IOR = vec3(1.51, 1.52, 1.53);
-
-// Width of the edge highlight/dim region
+const vec3  REFR_IOR = vec3(1.51, 1.52, 1.53);
 const float EDGE_DIM = .003;
-
-// Tint color and strength (RGBA, alpha is blend factor)
-const vec4 TINT_COLOR = vec4(0);
-
-// Direction of rim lighting (normalized vector)
-const vec2 RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
-
-// Rim light color and intensity (RGB + alpha for strength)
-const vec4 RIM_LIGHT_COLOR = vec4(vec3(1.),.15);
-
-// Minimum and maximum offset for reflection sampling
+const vec4  TINT_COLOR = vec4(0);
+const vec2  RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
+const vec4  RIM_LIGHT_COLOR = vec4(vec3(1.), .15);
 const float REFL_OFFSET_MIN = 0.035;
 const float REFL_OFFSET_MAG = 0.005;
-
-// Smoothing factor for blending widget fields
 const float FIELD_SMOOTHING = 0.003;
 
-#define PI 3.141592653589323
+#define PI 3.141592653589793
 
-vec3 sdgCircle( in vec2 p, in float r )
-{
-    float l = length(p);
-    vec2 n = l > 1e-6 ? p / l : vec2(0.0);
-    return vec3( l-r, n );
-}
-
-vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra )
-{
+vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra ) {
     ra.xy   = (p.x>0.0)?ra.xy : ra.zw;
     float r = (p.y>0.0)?ra.x  : ra.y;
-
     vec2 w = abs(p)-(b-r);
     vec2 s = vec2(p.x<0.0?-1:1,p.y<0.0?-1:1);
-
     float g = max(w.x,w.y);
     vec2  q = max(w,0.0);
     float l = length(q);
-
     float dist = (g>0.0)?l-r: g-r;
     vec2  n    = (g>0.0)? (q / max(l,1e-6)) : ((w.x>w.y)?vec2(1,0):vec2(0,1));
     return vec3(dist, s*n);
 }
 
-vec3 sdgSMin( in vec3 a, in vec3 b, in float k )
-{
+vec3 sdgSMin( in vec3 a, in vec3 b, in float k ) {
     k *= 4.0;
     float h = max( k-abs(a.x-b.x), 0.0 )/(2.0*k);
     float d = min(a.x,b.x)-h*h*k;
     vec2  n = normalize(mix(a.yz,b.yz,(a.x<b.x)?h:1.0-h));
     return vec3(d, n);
-}
-
-vec3 sdgMin( in vec3 a, in vec3 b )
-{
-    return (a.x<b.x) ? a : b;
 }
 
 float lerp(float minV, float maxV, float v) {
@@ -123,7 +83,7 @@ struct Shared {
     vec2 norm;
 };
 
-vec3 fieldWidgets(vec2 p) {
+vec3 fieldWidgets(vec2 p, vec2 inSize) {
     int n = int(Count + 0.5);
     vec3 f = vec3(1e6, 0.0, 0.0);
     bool hasAny = false;
@@ -133,11 +93,10 @@ vec3 fieldWidgets(vec2 p) {
         vec4 rc = Rects[i];
         vec4 rr = Rads[i];
 
-
         vec2 cPx = vec2(rc.x + 0.5*rc.z, rc.y + 0.5*rc.w);
-        vec2 c = screenToUV(cPx, InSize);
-        vec2 b = 0.5 * vec2(rc.z, rc.w) / InSize.y;
-        vec4 rad = rr / InSize.y;
+        vec2 c = screenToUV(cPx, inSize);
+        vec2 b = 0.5 * vec2(rc.z, rc.w) / inSize.y;
+        vec4 rad = rr / inSize.y;
         vec2 pLoc = p - c;
 
         vec3 g = sdgBox(pLoc, b, rad);
@@ -149,74 +108,40 @@ vec3 fieldWidgets(vec2 p) {
         }
     }
 
-    if (!hasAny) {
-        return vec3(1e6, 0.0, 0.0);
-    }
+    if (!hasAny) return vec3(1e6, 0.0, 0.0);
     return f;
 }
 
-void refractionLayer(inout vec3 col, inout Shared s) {
-    float boundary = lerp(-REFR_DIM, s.EPS, s.d);
-    boundary = mix(boundary, 0., smoothstep(0.,s.EPS,s.d));
-
-    float cosBoundary = 1.0 - cos(boundary * PI / 2.0);
-
-    vec3 ior = mix(
-    vec3(REFR_IOR.g),
-    REFR_IOR,
-    REFR_ABERRATION
-    );
-
-    vec2 offset = -s.norm * REFR_MAG;
-
-    vec3 ratios = pow(vec3(cosBoundary), ior);
-    vec2 offsetR = offset * ratios.r;
-    vec2 offsetG = offset * ratios.g;
-    vec2 offsetB = offset * ratios.b;
-
-    vec3 baseColor = texture(iChannel0Sampler, s.UV).rgb;
-
-    float r = texture(iChannel2Sampler, s.UV + offsetR).r;
-    float g = texture(iChannel2Sampler, s.UV + offsetG).g;
-    float b = texture(iChannel2Sampler, s.UV + offsetB).b;
-    vec3 blurWarped = vec3(r,g,b);
-
-    col = mix(baseColor, blurWarped, smoothstep(s.EPS, 0., s.d));
+vec3 gaussianBlur(sampler2D tex, vec2 uv, vec2 px) {
+    const int SAMPLES = 5;
+    const float SIGMA = float(SAMPLES) * 0.25;
+    vec3 sum = vec3(0.0);
+    float acc = 0.0;
+    int middle = SAMPLES / 2;
+    for (int i = -middle; i <= middle; i++) {
+        for (int j = -middle; j <= middle; j++) {
+            float d = length(vec2(i, j));
+            float w = exp(-0.5 * (d*d) / (SIGMA*SIGMA));
+            sum += texture(tex, uv + vec2(i, j) * px).rgb * w;
+            acc += w;
+        }
+    }
+    return sum / acc;
 }
 
-void tintLayer(inout vec3 col, inout Shared s) {
-    float interior = smoothstep(s.EPS, 0., s.d);
-    col = mix(col, TINT_COLOR.rgb, TINT_COLOR.a * interior);
-
-    float a = smoothstep(s.EPS, 0., s.d);
-    float b = lerp(-EDGE_DIM, 0., s.d);
-    float edge = min(a, b);
-
-    float cosEdge = 1. - cos(edge * PI / 2.);
-
-    float rimLightIntensity = abs(dot(normalize(s.norm), RIM_LIGHT_VEC));
-    vec3 rimLight = RIM_LIGHT_COLOR.rgb * RIM_LIGHT_COLOR.a * rimLightIntensity;
-
-    vec2 reflectionOffset = (REFL_OFFSET_MIN + REFL_OFFSET_MAG * cosEdge) * s.norm;
-    vec3 reflectionColor = clamp(texture(iChannel3Sampler, s.UV + reflectionOffset).rgb, 0., 1.);
-    reflectionColor = mix(reflectionColor, TINT_COLOR.rgb, TINT_COLOR.a);
-
-    vec3 mergedEdgeColor = blendScreen(rimLight, reflectionColor);
-    vec3 edgeColor = blendLighten(col, mergedEdgeColor);
-    col = mix(col, edgeColor, cosEdge);
-}
 
 void main()
 {
-    vec2 UV = texCoord;
+    vec2 inSize = InSize;
+    if (inSize.x <= 0.0 || inSize.y <= 0.0) {
+        inSize = vec2(textureSize(Sampler0, 0));
+    }
 
-    float EPS = EPS_PIX / InSize.y;
+    vec2 UV = gl_FragCoord.xy / inSize;
+    float EPS = EPS_PIX / inSize.y;
+    vec2 p = screenToUV(gl_FragCoord.xy, inSize);
 
-
-    vec2 p = screenToUV(gl_FragCoord.xy, InSize);
-
-
-    vec3 f = fieldWidgets(p);
+    vec3 f = fieldWidgets(p, inSize);
 
     Shared sh;
     sh.EPS = EPS;
@@ -226,16 +151,51 @@ void main()
     sh.d = f.x;
     sh.norm = f.yz;
 
-
     if (sh.d > 0.5) {
-        fragColor = vec4(texture(iChannel0Sampler, UV).rgb, 1.0);
+        fragColor = vec4(texture(Sampler0, UV).rgb, 1.0);
         return;
     }
 
-    vec3 col = vec3(0.);
+    float boundary = lerp(-REFR_DIM, sh.EPS, sh.d);
+    boundary = mix(boundary, 0., smoothstep(0., sh.EPS, sh.d));
+    float cosBoundary = 1.0 - cos(boundary * PI / 2.0);
+    vec3 ior = mix(vec3(REFR_IOR.g), REFR_IOR, REFR_ABERRATION);
+    vec2 offset = -sh.norm * REFR_MAG;
+    vec3 ratios = pow(vec3(cosBoundary), ior);
+    vec2 offsetR = offset * ratios.r;
+    vec2 offsetG = offset * ratios.g;
+    vec2 offsetB = offset * ratios.b;
 
-    refractionLayer(col, sh);
-    tintLayer(col, sh);
+    vec3 baseColor = texture(Sampler0, sh.UV).rgb;
+    vec3 blurWarped = gaussianBlur(Sampler0, sh.UV, 1.0/inSize);
+
+    float r = texture(Sampler0, sh.UV + offsetR).r;
+    float g = texture(Sampler0, sh.UV + offsetG).g;
+    float blueCh = texture(Sampler0, sh.UV + offsetB).b;
+    vec3 refrColor = vec3(r, g, blueCh);
+
+    vec3 col = mix(baseColor, mix(blurWarped, refrColor, 0.7), smoothstep(sh.EPS, 0., sh.d));
+
+    float interior = smoothstep(sh.EPS, 0., sh.d);
+    col = mix(col, TINT_COLOR.rgb, TINT_COLOR.a * interior);
+
+    float a = smoothstep(sh.EPS, 0., sh.d);
+    float b = lerp(-EDGE_DIM, 0., sh.d);
+    float edge = min(a, b);
+    float cosEdge = 1. - cos(edge * PI / 2.);
+
+    float rimLightIntensity = abs(dot(normalize(sh.norm), RIM_LIGHT_VEC));
+    vec3 rimLight = RIM_LIGHT_COLOR.rgb * RIM_LIGHT_COLOR.a * rimLightIntensity;
+
+    vec2 reflectionOffset = (REFL_OFFSET_MIN + REFL_OFFSET_MAG * cosEdge) * sh.norm;
+
+    vec3 bloomColor = max(vec3(0.0), blurWarped - 0.25) * 0.8;
+    vec3 reflectionColor = clamp(bloomColor, 0., 1.);
+    reflectionColor = mix(reflectionColor, TINT_COLOR.rgb, TINT_COLOR.a);
+
+    vec3 mergedEdgeColor = blendScreen(rimLight, reflectionColor);
+    vec3 edgeColor = blendLighten(col, mergedEdgeColor);
+    col = mix(col, edgeColor, cosEdge);
 
     fragColor = vec4(col, 1.);
 }
