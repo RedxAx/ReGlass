@@ -77,8 +77,25 @@ vec3 fieldWidgets(vec2 p, vec2 inSize) {
     return f;
 }
 
+void baseLayer(out vec3 col, in Shared s) {
+    float boundary = lerp(-REFR_DIM, s.EPS, s.d);
+    boundary = mix(boundary, 0., smoothstep(0.,s.EPS,s.d));
+    float cosBoundary = 1.0 - cos(boundary * PI / 2.0);
+    vec3 ior = mix(vec3(REFR_IOR.g), REFR_IOR, REFR_ABERRATION);
+    vec2 offset = -s.norm * REFR_MAG;
+    vec3 ratios = pow(vec3(cosBoundary), ior);
+    vec2 offsetR = offset * ratios.r;
+    vec2 offsetG = offset * ratios.g;
+    vec2 offsetB = offset * ratios.b;
 
-void tintLayer(inout vec3 col, inout Shared s) {
+    float r = texture(Sampler1, s.UV + offsetR).r;
+    float g = texture(Sampler1, s.UV + offsetG).g;
+    float b = texture(Sampler1, s.UV + offsetB).b;
+
+    col = vec3(r,g,b);
+}
+
+void tintLayer(inout vec3 col, in Shared s) {
     float interior = smoothstep(s.EPS, 0., s.d);
     col = mix(col, TINT_COLOR.rgb, TINT_COLOR.a * interior);
     float a = smoothstep(s.EPS, 0., s.d);
@@ -88,6 +105,7 @@ void tintLayer(inout vec3 col, inout Shared s) {
     float rimLightIntensity = abs(dot(normalize(s.norm), RIM_LIGHT_VEC));
     vec3 rimLight = RIM_LIGHT_COLOR.rgb * RIM_LIGHT_COLOR.a * rimLightIntensity;
     vec2 reflectionOffset = (REFL_OFFSET_MIN + REFL_OFFSET_MAG * cosEdge) * s.norm;
+
     vec3 reflectionColor = clamp(texture(Sampler2, s.UV + reflectionOffset).rgb, 0., 1.);
     reflectionColor = mix(reflectionColor, TINT_COLOR.rgb, TINT_COLOR.a);
     vec3 mergedEdgeColor = blendScreen(rimLight, reflectionColor);
@@ -113,27 +131,8 @@ void main()
         return;
     }
 
-    vec3 underlyingGuiColor = texture(Sampler0, sh.UV).rgb;
-
-    vec3 refractedColor;
-    {
-        float boundary = lerp(-REFR_DIM, sh.EPS, sh.d);
-        boundary = mix(boundary, 0., smoothstep(0.,sh.EPS,sh.d));
-        float cosBoundary = 1.0 - cos(boundary * PI / 2.0);
-        vec3 ior = mix(vec3(REFR_IOR.g), REFR_IOR, REFR_ABERRATION);
-        vec2 offset = -sh.norm * REFR_MAG;
-        vec3 ratios = pow(vec3(cosBoundary), ior);
-        vec2 offsetR = offset * ratios.r;
-        vec2 offsetG = offset * ratios.g;
-        vec2 offsetB = offset * ratios.b;
-
-        float r = texture(Sampler0, sh.UV + offsetR).r;
-        float g = texture(Sampler0, sh.UV + offsetG).g;
-        float b = texture(Sampler0, sh.UV + offsetB).b;
-        refractedColor = vec3(r, g, b);
-    }
-
-    vec3 col = mix(underlyingGuiColor, refractedColor, smoothstep(sh.EPS, -sh.EPS, sh.d));
+    vec3 col;
+    baseLayer(col, sh);
 
     tintLayer(col, sh);
 
