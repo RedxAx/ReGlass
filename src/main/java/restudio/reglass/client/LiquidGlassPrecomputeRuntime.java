@@ -39,9 +39,9 @@ public final class LiquidGlassPrecomputeRuntime {
     private GpuBuffer blurConfigUboX;
     private GpuBuffer blurConfigUboY;
 
-    private static final Identifier VS_ID     = Identifier.of("reglass", "core/blit_fullscreen");
-    private static final Identifier BLUR_ID   = Identifier.of("reglass", "program/blur");
-    private static final Identifier BLOOM_ID  = Identifier.of("reglass", "program/bloom");
+    private static final Identifier VS_ID = Identifier.of("reglass", "core/blit_fullscreen");
+    private static final Identifier BLUR_ID = Identifier.of("reglass", "program/blur");
+    private static final Identifier BLOOM_ID = Identifier.of("reglass", "program/bloom");
 
     private LiquidGlassPrecomputeRuntime() {}
 

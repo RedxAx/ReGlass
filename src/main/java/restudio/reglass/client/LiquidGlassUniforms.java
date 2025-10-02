@@ -2,15 +2,23 @@ package restudio.reglass.client;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.render.state.GuiRenderState;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.math.ColorHelper;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
+import restudio.reglass.client.api.ReGlassConfig;
+import restudio.reglass.client.api.model.Edge;
+import restudio.reglass.client.api.model.Reflection;
+import restudio.reglass.client.api.model.Refraction;
+import restudio.reglass.client.api.model.RimLight;
+import restudio.reglass.client.api.model.Tint;
+import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
 import restudio.reglass.mixin.accessor.GuiRenderStateAccessor;
 
 import java.util.ArrayList;
@@ -21,22 +29,34 @@ public final class LiquidGlassUniforms {
     private static final LiquidGlassUniforms INSTANCE = new LiquidGlassUniforms();
     public static LiquidGlassUniforms get() { return INSTANCE; }
 
-    public record IconInfo(Identifier texture, int texU, int texV, int texWidth, int texHeight) {}
-    public record Widget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow, @Nullable IconInfo iconInfo) {}
-
     private final GpuBuffer samplerInfo;
     private final GpuBuffer customUniforms;
     private final GpuBuffer widgetInfo;
 
     private static final int MAX_WIDGETS = 64;
-    private final List<Widget> widgets = new ArrayList<>();
+    private final List<LiquidGlassGuiElementRenderState> widgets = new ArrayList<>();
     private boolean screenWantsBlur = false;
 
     private LiquidGlassUniforms() {
-        samplerInfo    = RenderSystem.getDevice().createBuffer(() -> "reglass SamplerInfo", 130, 16);
-        customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, 48);
-        int widgetInfoSize = 16 * (1 + MAX_WIDGETS + MAX_WIDGETS);
-        widgetInfo     = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
+        samplerInfo = RenderSystem.getDevice().createBuffer(() -> "reglass SamplerInfo", 130, 16);
+
+        Std140SizeCalculator calc = new Std140SizeCalculator();
+        calc.putFloat();
+        calc.align(16);
+        calc.putVec4();
+        calc.putFloat();
+        calc.align(16);
+        calc.putVec3();
+        calc.align(16);
+        calc.putVec4();
+        calc.putFloat();
+        calc.putFloat();
+        int customUniformsSize = calc.get();
+
+        customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, customUniformsSize);
+
+        int widgetInfoSize = 16 + (MAX_WIDGETS * (16 + 16 + 16 + 16 + 16 + 16 + 16));
+        widgetInfo = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
     }
 
     public void beginFrame() {
@@ -65,7 +85,8 @@ public final class LiquidGlassUniforms {
         float scale = (float) mc.getWindow().getScaleFactor();
         int fbH = mc.getFramebuffer().textureHeight;
 
-        float time = mc.getRenderTickCounter().getDynamicDeltaTicks();
+        float time = (float) GLFW.glfwGetTime();
+        ReGlassConfig config = ReGlassConfig.INSTANCE;
 
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(customUniforms, false, true)) {
             Std140Builder b = Std140Builder.intoBuffer(map.data());
@@ -75,6 +96,21 @@ public final class LiquidGlassUniforms {
             float y = fbH - (float) (my[0] * scale);
             b.putVec4(new Vector4f(x, y, 0f, 0f));
             b.putFloat(this.screenWantsBlur ? 1.0f : 0.0f);
+            b.align(16);
+
+            Vector2f direction2D = config.rimLight.direction();
+            b.putVec3(new Vector3f(direction2D.x, direction2D.y, 0.0f));
+
+            b.align(16);
+            b.putVec4(
+                    ColorHelper.getRed(config.rimLight.color()) / 255f,
+                    ColorHelper.getGreen(config.rimLight.color()) / 255f,
+                    ColorHelper.getBlue(config.rimLight.color()) / 255f,
+                    config.rimLight.intensity()
+            );
+
+            b.putFloat(config.fieldSmoothing);
+            b.putFloat(config.pixelEpsilon);
         }
     }
 
@@ -86,9 +122,9 @@ public final class LiquidGlassUniforms {
         }
     }
 
-    public void addWidget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow, @Nullable IconInfo iconInfo) {
+    public void addWidget(LiquidGlassGuiElementRenderState element) {
         if (widgets.size() >= MAX_WIDGETS) return;
-        widgets.add(new Widget(x, y, w, h, radiusPx, text, color, shadow, iconInfo));
+        widgets.add(element);
     }
 
     public void uploadWidgetInfo() {
@@ -99,15 +135,17 @@ public final class LiquidGlassUniforms {
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(widgetInfo, false, true)) {
             Std140Builder b = Std140Builder.intoBuffer(map.data());
             b.putFloat((float) widgets.size());
-            b.putFloat(0f).putFloat(0f).putFloat(0f);
+            b.align(16);
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    Widget widget = widgets.get(i);
-                    float pixelX = widget.x() * scale;
-                    float pixelYTop = widget.y() * scale;
-                    float pixelW = widget.w() * scale;
-                    float pixelH = widget.h() * scale;
+                    LiquidGlassGuiElementRenderState widget = widgets.get(i);
+                    float w = widget.x2() - widget.x1();
+                    float h = widget.y2() - widget.y1();
+                    float pixelX = widget.x1() * scale;
+                    float pixelYTop = widget.y1() * scale;
+                    float pixelW = w * scale;
+                    float pixelH = h * scale;
                     float centerX = pixelX + 0.5f * pixelW;
                     float centerYTop = pixelYTop + 0.5f * pixelH;
                     float centerYFB = (float) fbH - centerYTop;
@@ -120,9 +158,62 @@ public final class LiquidGlassUniforms {
             }
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    Widget widget = widgets.get(i);
-                    float rad = widget.radiusPx() * scale;
+                    LiquidGlassGuiElementRenderState widget = widgets.get(i);
+                    float rad = widget.cornerRadius() * scale;
                     b.putVec4(rad, rad, rad, rad);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Tint tint = widgets.get(i).style().getTint();
+                    b.putVec4(
+                            ColorHelper.getRed(tint.color()) / 255f,
+                            ColorHelper.getGreen(tint.color()) / 255f,
+                            ColorHelper.getBlue(tint.color()) / 255f,
+                            tint.alpha()
+                    );
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Refraction refraction = widgets.get(i).style().getRefraction();
+                    b.putVec4(refraction.dimension(), refraction.magnitude(), refraction.minDimension(), refraction.minMagnitude());
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Refraction refraction = widgets.get(i).style().getRefraction();
+                    float chromaticAberration = widgets.get(i).style().getRefraction().chromaticAberration();
+                    b.putVec4(chromaticAberration, refraction.ior().x, refraction.ior().y, refraction.ior().z);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Edge edge = widgets.get(i).style().getEdge();
+                    Reflection reflection = widgets.get(i).style().getReflection();
+                    b.putVec4(edge.dimension(), reflection.offsetMin(), reflection.offsetMagnitude(), 0);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Edge edge = widgets.get(i).style().getEdge();
+                    Reflection reflection = widgets.get(i).style().getReflection();
+                    b.putVec4(edge.minDimension(), reflection.minOffsetMin(), reflection.minOffsetMagnitude(), 0);
                 } else {
                     b.putVec4(0f, 0f, 0f, 0f);
                 }
@@ -134,7 +225,7 @@ public final class LiquidGlassUniforms {
         return widgets.size();
     }
 
-    public List<Widget> getWidgets() {
+    public List<LiquidGlassGuiElementRenderState> getWidgets() {
         return widgets;
     }
 

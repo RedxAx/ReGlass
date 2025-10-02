@@ -5,38 +5,38 @@ uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
 
 layout(std140) uniform SamplerInfo { vec2 OutSize; vec2 InSize; };
-layout(std140) uniform CustomUniforms { float Time; vec4 Mouse; float ScreenWantsBlur; };
+layout(std140) uniform CustomUniforms {
+    float Time;
+    vec4 Mouse;
+    float ScreenWantsBlur;
+    vec3 RIM_LIGHT_VEC;
+    vec4 RIM_LIGHT_COLOR;
+    float FIELD_SMOOTHING;
+    float EPS_PIX;
+};
+
 #define MAX_WIDGETS 64
-layout(std140) uniform WidgetInfo { float Count; vec4 Rects[MAX_WIDGETS]; vec4 Rads[MAX_WIDGETS]; };
+layout(std140) uniform WidgetInfo {
+    float Count;
+    vec4 Rects[MAX_WIDGETS];
+    vec4 Rads[MAX_WIDGETS];
+    vec4 Tints[MAX_WIDGETS];
+    vec4 RefractionParams[MAX_WIDGETS];
+    vec4 RefractionExtras[MAX_WIDGETS];
+    vec4 ReflectionParams[MAX_WIDGETS];
+    vec4 ReflectionExtras[MAX_WIDGETS];
+};
 
 in vec2 texCoord;
 out vec4 fragColor;
 
-const float REFR_DIM = 0.05;
-const float REFR_MAG = 0.1;
-const float EDGE_DIM = .003;
-const float REFL_OFFSET_MIN = 0.035;
-const float REFL_OFFSET_MAG = 0.005;
-
-const float MIN_REFR_DIM = 0.02;
-const float MIN_REFR_MAG = 0.02;
-const float MIN_EDGE_DIM = .001;
-const float MIN_REFL_OFFSET_MIN = 0.01;
-const float MIN_REFL_OFFSET_MAG = 0.001;
-
-const float EPS_PIX = 2.;
-const float REFR_ABERRATION = 5.;
-const vec3  REFR_IOR = vec3(1.51, 1.52, 1.53);
-const vec4  TINT_COLOR = vec4(0);
-const vec2  RIM_LIGHT_VEC = normalize(vec2(-1., 1.));
-const vec4  RIM_LIGHT_COLOR = vec4(vec3(1.), .15);
-const float FIELD_SMOOTHING = 0.003;
 #define PI 3.141592653589793
 
 struct SDFResult {
     float dist;
     vec2 normal;
     float aspect;
+    int index;
 };
 
 float lerp(float minV, float maxV, float v) { return clamp((v - minV) / (maxV - minV), 0., 1.); }
@@ -61,14 +61,16 @@ SDFResult sdgSMin( in SDFResult a, in SDFResult b, in float k ) {
     k *= 4.0;
     float h = max( k-abs(a.dist-b.dist), 0.0 )/(2.0*k);
     float d = min(a.dist,b.dist)-h*h*k;
-    vec2  n = normalize(mix(a.normal,b.normal,(a.dist<b.dist)?h:1.0-h));
-    float aspect = mix(a.aspect, b.aspect, (a.dist<b.dist)?h:1.0-h);
-    return SDFResult(d, n, aspect);
+    float mixFactor = (a.dist<b.dist) ? h : 1.0-h;
+    vec2  n = normalize(mix(a.normal,b.normal,mixFactor));
+    float aspect = mix(a.aspect, b.aspect, mixFactor);
+    int index = a.dist < b.dist ? a.index : b.index;
+    return SDFResult(d, n, aspect, index);
 }
 
 SDFResult fieldWidgets(vec2 p, vec2 inSize) {
     int n = int(Count + 0.5);
-    SDFResult f = SDFResult(1e6, vec2(0.0), 1.0);
+    SDFResult f = SDFResult(1e6, vec2(0.0), 1.0, -1);
     bool hasAny = false;
 
     for (int i = 0; i < MAX_WIDGETS; i++) {
@@ -85,7 +87,7 @@ SDFResult fieldWidgets(vec2 p, vec2 inSize) {
         vec3 g_vec = sdgBox(pLoc, b, rad);
 
         float aspect = min(rc.z, rc.w) / max(rc.z, rc.w);
-        SDFResult g = SDFResult(g_vec.x, g_vec.yz, aspect);
+        SDFResult g = SDFResult(g_vec.x, g_vec.yz, aspect, i);
 
         if (!hasAny) {
             f = g;
@@ -110,6 +112,19 @@ struct Shared {
 };
 
 void baseLayer(out vec3 col, in Shared s) {
+    vec4 refrParams = RefractionParams[s.f.index];
+    float REFR_DIM = refrParams.x;
+    float REFR_MAG = refrParams.y;
+    float MIN_REFR_DIM = refrParams.z;
+    float MIN_REFR_MAG = refrParams.w;
+
+    vec4 refrExtras = RefractionExtras[s.f.index];
+    float REFR_ABERRATION = refrExtras.x;
+    vec3 REFR_IOR = refrExtras.yzw;
+
+    s.dynamicRefrDim = mix(MIN_REFR_DIM, REFR_DIM, s.f.aspect);
+    s.dynamicRefrMag = mix(MIN_REFR_MAG, REFR_MAG, s.f.aspect);
+
     float boundary = lerp(-s.dynamicRefrDim, s.EPS, s.f.dist);
     boundary = mix(boundary, 0., smoothstep(0.,s.EPS,s.f.dist));
     float cosBoundary = 1.0 - cos(boundary * PI / 2.0);
@@ -127,13 +142,29 @@ void baseLayer(out vec3 col, in Shared s) {
 }
 
 void tintLayer(inout vec3 col, in Shared s) {
+    vec4 TINT_COLOR = Tints[s.f.index];
+
+    vec4 reflParams = ReflectionParams[s.f.index];
+    float EDGE_DIM = reflParams.x;
+    float REFL_OFFSET_MIN = reflParams.y;
+    float REFL_OFFSET_MAG = reflParams.z;
+
+    vec4 reflExtras = ReflectionExtras[s.f.index];
+    float MIN_EDGE_DIM = reflExtras.x;
+    float MIN_REFL_OFFSET_MIN = reflExtras.y;
+    float MIN_REFL_OFFSET_MAG = reflExtras.z;
+
+    s.dynamicEdgeDim = mix(MIN_EDGE_DIM, EDGE_DIM, s.f.aspect);
+    s.dynamicReflOffsetMin = mix(MIN_REFL_OFFSET_MIN, REFL_OFFSET_MIN, s.f.aspect);
+    s.dynamicReflOffsetMag = mix(MIN_REFL_OFFSET_MAG, REFL_OFFSET_MAG, s.f.aspect);
+
     float interior = smoothstep(s.EPS, 0., s.f.dist);
     col = mix(col, TINT_COLOR.rgb, TINT_COLOR.a * interior);
     float a = smoothstep(s.EPS, 0., s.f.dist);
     float b = lerp(-s.dynamicEdgeDim, 0., s.f.dist);
     float edge = min(a, b);
     float cosEdge = 1. - cos(edge * PI / 2.);
-    float rimLightIntensity = abs(dot(normalize(s.f.normal), RIM_LIGHT_VEC));
+    float rimLightIntensity = abs(dot(normalize(s.f.normal), RIM_LIGHT_VEC.xy));
     vec3 rimLight = RIM_LIGHT_COLOR.rgb * RIM_LIGHT_COLOR.a * rimLightIntensity;
     vec2 reflectionOffset = (s.dynamicReflOffsetMin + s.dynamicReflOffsetMag * cosEdge) * s.f.normal;
 
@@ -162,20 +193,13 @@ void main()
     }
 
     float opacity = smoothstep(EPS, -EPS, f.dist);
-    if (opacity <= 0.0) {
+    if (opacity <= 0.0 || f.index < 0) {
         fragColor = vec4(backgroundColor, 1.0);
         return;
     }
 
     Shared sh;
     sh.EPS = EPS; sh.p = p; sh.UV = UV; sh.f = f;
-
-    float aspectFactor = f.aspect;
-    sh.dynamicRefrDim = mix(MIN_REFR_DIM, REFR_DIM, aspectFactor);
-    sh.dynamicRefrMag = mix(MIN_REFR_MAG, REFR_MAG, aspectFactor);
-    sh.dynamicEdgeDim = mix(MIN_EDGE_DIM, EDGE_DIM, aspectFactor);
-    sh.dynamicReflOffsetMin = mix(MIN_REFL_OFFSET_MIN, REFL_OFFSET_MIN, aspectFactor);
-    sh.dynamicReflOffsetMag = mix(MIN_REFL_OFFSET_MAG, REFL_OFFSET_MAG, aspectFactor);
 
     vec3 col;
     baseLayer(col, sh);

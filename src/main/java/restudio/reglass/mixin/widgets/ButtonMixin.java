@@ -8,11 +8,13 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.render.state.TextGuiElementRenderState;
 import net.minecraft.client.gui.render.state.TexturedQuadGuiElementRenderState;
 import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.client.gui.widget.LockButtonWidget;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.TextIconButtonWidget;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.TextureSetup;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.joml.Matrix3x2f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +24,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import restudio.reglass.client.Config;
 import restudio.reglass.client.LiquidGlassUniforms;
-import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
+import restudio.reglass.client.LiquidGlassWidget;
+import restudio.reglass.client.api.ReGlassApi;
 import restudio.reglass.mixin.accessor.TextIconButtonWidgetAccessor;
 
 @Mixin(ClickableWidget.class)
@@ -38,15 +41,10 @@ public abstract class ButtonMixin {
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/ClickableWidget;renderWidget(Lnet/minecraft/client/gui/DrawContext;IIF)V"), cancellable = true)
     private void onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         ClickableWidget widget = (ClickableWidget) (Object) this;
-        if (Config.redesginMinecraft && widget instanceof PressableWidget) {
+        if (Config.redesginMinecraft && widget instanceof PressableWidget && !(widget instanceof LiquidGlassWidget)) {
             ci.cancel();
 
-            float cornerRadius = 0.5f * Math.min(widget.getWidth(), widget.getHeight());
-            context.state.addSpecialElement(new LiquidGlassGuiElementRenderState(
-                    widget.getX(), widget.getY(),
-                    widget.getX() + widget.getWidth(), widget.getY() + widget.getHeight(),
-                    cornerRadius
-            ));
+            ReGlassApi.create(context).fromWidget(widget).render();
 
             LiquidGlassUniforms.get().tryApplyBlur(context);
 
@@ -70,6 +68,12 @@ public abstract class ButtonMixin {
                 int iconX = (getX() + (getWidth() - iconWidth) / 2) + 1;
                 int iconY = (getY() + (getHeight() - iconHeight) / 2) + 1;
 
+                boolean notSquared = iconButton.getHeight() != iconButton.getWidth();
+                if (!message.getString().isEmpty() && notSquared) {
+                    iconX = getX() + getWidth() / 2 - (iconWidth + 2 + textWidth) / 2;
+                    textX = iconX + iconWidth + 2;
+                }
+
                 Sprite iconSprite = client.getGuiAtlasManager().getSprite(accessor.getTexture());
                 GpuTextureView atlasTexture = client.getTextureManager().getTexture(iconSprite.getAtlasId()).getGlTextureView();
 
@@ -83,14 +87,13 @@ public abstract class ButtonMixin {
                         iconSprite.getMinV(), iconSprite.getMaxV(),
                         finalColor, null
                 ));
-            } else {
-                if (!message.getString().isEmpty()) {
-                    context.state.addText(new TextGuiElementRenderState(
-                            textRenderer, message.asOrderedText(), pose, textX, textY, finalColor, 0, true, null
-                    ));
-                }
-            }
 
+                if (!message.getString().isEmpty() && notSquared) {
+                    context.state.addText(new TextGuiElementRenderState(textRenderer, message.asOrderedText(), pose, textX, textY, finalColor, 0, true, null));
+                }
+            } else {
+                context.drawCenteredTextWithShadow(textRenderer, message, getX() + getWidth() / 2, textY, finalColor);
+            }
         }
     }
 }

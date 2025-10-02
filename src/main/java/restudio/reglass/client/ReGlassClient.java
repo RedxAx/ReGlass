@@ -8,9 +8,15 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import restudio.reglass.client.api.ReGlassApi;
+import restudio.reglass.client.api.WidgetStyle;
+import restudio.reglass.client.api.model.RimLight;
+import restudio.reglass.client.api.model.Tint;
 
 public class ReGlassClient implements ClientModInitializer {
     private static KeyBinding widgetToggle;
@@ -35,8 +41,8 @@ public class ReGlassClient implements ClientModInitializer {
     }
 
     private static class TestScreen extends Screen {
-        private LiquidGlassWidget glassWidget;
         private boolean blur;
+        private WidgetStyle customStyle;
 
         protected TestScreen() {
             super(Text.literal("Glass Test"));
@@ -46,22 +52,8 @@ public class ReGlassClient implements ClientModInitializer {
         protected void init() {
             super.init();
 
-            addDrawableChild(ButtonWidget.builder(Text.literal("Toggle Blur"), button -> toggleBlur())
-                    .dimensions(width / 2 - 50, height - 30, 100, 20).build());
-
-            if (glassWidget == null) {
-                glassWidget = new LiquidGlassWidget(0, 0, 24, 24);
-            }
-            addDrawableChild(glassWidget);
-        }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (super.mouseClicked(mouseX, mouseY, button)) return true;
-            if (button == 0) {
-                addDrawableChild(new LiquidGlassWidget((int) mouseX - 25, (int) mouseY - 25, 50, 50));
-            }
-            return true;
+            customStyle = WidgetStyle.create().tint(new Tint(Formatting.GOLD.getColorValue(), 0.4f)).rimLight(new RimLight(new Vector2f(0.5f, -0.5f), 0xFFEEEE, 0.5f));
+            addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50, customStyle).setMoveable(true));
         }
 
         @Override
@@ -77,6 +69,15 @@ public class ReGlassClient implements ClientModInitializer {
 
         public void toggleBlur() {
             blur = !blur;
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (button == 1) {
+                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100, null)).setMoveable(true);
+                return true;
+            }
+            return super.mouseClicked(mouseX, mouseY, button);
         }
     }
 }
