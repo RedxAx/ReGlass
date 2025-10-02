@@ -27,7 +27,7 @@ public final class LiquidGlassPipelines {
                     .withSampler("Sampler1")
                     .withSampler("Sampler2")
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                    .withDepthWrite(true)
+                    .withDepthWrite(false)
                     .withVertexFormat(VertexFormats.POSITION, VertexFormat.DrawMode.QUADS);
 
             LIQUID_GLASS_GUI = b.build();

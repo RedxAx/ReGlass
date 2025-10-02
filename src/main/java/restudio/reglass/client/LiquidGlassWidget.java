@@ -27,7 +27,7 @@ public class LiquidGlassWidget extends ClickableWidget {
 
     @Override
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-        LiquidGlassUniforms.get().addRect(getX(), getY(), getWidth(), getHeight(), this.cornerRadiusPx);
+        LiquidGlassUniforms.get().addWidget(getX(), getY(), getWidth(), getHeight(), this.cornerRadiusPx, getMessage(), 0xFFFFFFFF, true);
     }
 
     @Override

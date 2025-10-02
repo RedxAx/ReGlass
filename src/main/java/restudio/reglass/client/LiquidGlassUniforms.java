@@ -4,12 +4,9 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL32;
-import restudio.reglass.mixin.accessor.GlGpuBufferAccessor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +16,14 @@ public final class LiquidGlassUniforms {
     private static final LiquidGlassUniforms INSTANCE = new LiquidGlassUniforms();
     public static LiquidGlassUniforms get() { return INSTANCE; }
 
+    public record Widget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow) {}
+
     private final GpuBuffer samplerInfo;
     private final GpuBuffer customUniforms;
     private final GpuBuffer widgetInfo;
 
     private static final int MAX_WIDGETS = 64;
-    private final List<float[]> rects = new ArrayList<>();
-    private final List<Float> rads = new ArrayList<>();
-
-    private int samplerBinding = -1;
-    private int customBinding = -1;
-    private int widgetBinding = -1;
+    private final List<Widget> widgets = new ArrayList<>();
 
     private LiquidGlassUniforms() {
         samplerInfo    = RenderSystem.getDevice().createBuffer(() -> "reglass SamplerInfo", 130, 16);
@@ -39,8 +33,7 @@ public final class LiquidGlassUniforms {
     }
 
     public void beginFrame() {
-        rects.clear();
-        rads.clear();
+        widgets.clear();
 
         MinecraftClient mc = MinecraftClient.getInstance();
         int outW = mc.getFramebuffer().textureWidth;
@@ -69,10 +62,9 @@ public final class LiquidGlassUniforms {
         }
     }
 
-    public void addRect(float x, float y, float w, float h, float radiusPx) {
-        if (rects.size() >= MAX_WIDGETS) return;
-        rects.add(new float[]{x, y, w, h});
-        rads.add(radiusPx);
+    public void addWidget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow) {
+        if (widgets.size() >= MAX_WIDGETS) return;
+        widgets.add(new Widget(x, y, w, h, radiusPx, text, color, shadow));
     }
 
     public void uploadWidgetInfo() {
@@ -82,16 +74,16 @@ public final class LiquidGlassUniforms {
 
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(widgetInfo, false, true)) {
             Std140Builder b = Std140Builder.intoBuffer(map.data());
-            b.putFloat((float) rects.size());
+            b.putFloat((float) widgets.size());
             b.putFloat(0f).putFloat(0f).putFloat(0f);
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
-                if (i < rects.size()) {
-                    float[] r = rects.get(i);
-                    float pixelX = r[0] * scale;
-                    float pixelYTop = r[1] * scale;
-                    float pixelW = r[2] * scale;
-                    float pixelH = r[3] * scale;
+                if (i < widgets.size()) {
+                    Widget widget = widgets.get(i);
+                    float pixelX = widget.x() * scale;
+                    float pixelYTop = widget.y() * scale;
+                    float pixelW = widget.w() * scale;
+                    float pixelH = widget.h() * scale;
                     float centerX = pixelX + 0.5f * pixelW;
                     float centerYTop = pixelYTop + 0.5f * pixelH;
                     float centerYFB = (float) fbH - centerYTop;
@@ -103,8 +95,9 @@ public final class LiquidGlassUniforms {
                 }
             }
             for (int i = 0; i < MAX_WIDGETS; i++) {
-                if (i < rads.size()) {
-                    float rad = rads.get(i) * scale;
+                if (i < widgets.size()) {
+                    Widget widget = widgets.get(i);
+                    float rad = widget.radiusPx() * scale;
                     b.putVec4(rad, rad, rad, rad);
                 } else {
                     b.putVec4(0f, 0f, 0f, 0f);
@@ -113,35 +106,12 @@ public final class LiquidGlassUniforms {
         }
     }
 
-    public void bindForCurrentProgram() {
-        int program = GL20.glGetInteger(35725);
-        if (program == 0) return;
-
-        int siIdx = GL31.glGetUniformBlockIndex(program, "SamplerInfo");
-        if (siIdx >= 0) {
-            if (samplerBinding < 0) samplerBinding = 2;
-            GL31.glUniformBlockBinding(program, siIdx, samplerBinding);
-            GL32.glBindBufferRange(35345, samplerBinding, ((GlGpuBufferAccessor) samplerInfo).getId(), 0, samplerInfo.size());
-        }
-
-        int cuIdx = GL31.glGetUniformBlockIndex(program, "CustomUniforms");
-        if (cuIdx >= 0) {
-            if (customBinding < 0) customBinding = 3;
-            GL31.glUniformBlockBinding(program, cuIdx, customBinding);
-            GL32.glBindBufferRange(35345, customBinding, ((GlGpuBufferAccessor) customUniforms).getId(), 0, customUniforms.size());
-        }
-
-        int wiIdx = GL31.glGetUniformBlockIndex(program, "WidgetInfo");
-        System.out.println("WidgetInfo idx=" + wiIdx + " program=" + program);
-        if (wiIdx >= 0) {
-            if (widgetBinding < 0) widgetBinding = 4;
-            GL31.glUniformBlockBinding(program, wiIdx, widgetBinding);
-            GL32.glBindBufferRange(35345, widgetBinding, ((GlGpuBufferAccessor) widgetInfo).getId(), 0, widgetInfo.size());
-        }
+    public int getCount() {
+        return widgets.size();
     }
 
-    public int getCount() {
-        return rects.size();
+    public List<Widget> getWidgets() {
+        return widgets;
     }
 
     public GpuBuffer getSamplerInfoBuffer() { return samplerInfo; }
