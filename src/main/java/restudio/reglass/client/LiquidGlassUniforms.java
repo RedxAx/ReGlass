@@ -9,7 +9,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL32;
-import restudio.reglass.mixin.logical.GlGpuBufferAccessor;
+import restudio.reglass.mixin.accessor.GlGpuBufferAccessor;
 
 import java.util.ArrayList;
 import java.util.List;

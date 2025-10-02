@@ -1,4 +1,4 @@
-package restudio.reglass.mixin.logical;
+package restudio.reglass.mixin.accessor;
 
 import net.minecraft.client.gl.GlGpuBuffer;
 import org.spongepowered.asm.mixin.Mixin;

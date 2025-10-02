@@ -13,9 +13,9 @@
   "client": [
     "logical.GameRendererMixin",
     "logical.GlCommandEncoderMixin",
-    "logical.GlGpuBufferAccessor",
+    "accessor.GlGpuBufferAccessor",
     "logical.GuiRendererMixin",
-    "logical.RenderPassImplAccessor",
+    "accessor.RenderPassImplAccessor",
     "widgets.ButtonMixin"
   ]
 }
