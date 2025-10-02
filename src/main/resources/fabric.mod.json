@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "reglass",
   "version": "1.0.0",
-  "name": "Liquid Glass Demo",
-  "description": "A demonstration of a liquid glass shader in Minecraft.",
+  "name": "ReGlass",
+  "description": "Liquid Glass Implemented On Your Favorite Pixelated And Cubic Game.",
   "authors": [
     "RedxAx"
   ],
@@ -22,7 +22,7 @@
     ],
   "depends": {
     "fabricloader": ">=0.15.0",
-    "minecraft": ">=1.21.6",
+    "minecraft": ">=1.21.8",
     "java": ">=21",
     "fabric-api": "*"
   }

@@ -154,9 +154,11 @@ void main()
 
     SDFResult f = fieldWidgets(p, inSize);
 
+    vec3 underlyingColor = texture(Sampler0, UV).rgb;
+
     float opacity = smoothstep(EPS, -EPS, f.dist);
     if (opacity <= 0.0) {
-        fragColor = vec4(0.0);
+        fragColor = vec4(underlyingColor, 1.0);
         return;
     }
 
@@ -174,5 +176,7 @@ void main()
     baseLayer(col, sh);
     tintLayer(col, sh);
 
-    fragColor = vec4(col * opacity, opacity);
+    col = mix(underlyingColor, col, opacity);
+
+    fragColor = vec4(col, 1.0);
 }

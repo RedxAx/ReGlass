@@ -1,6 +1,5 @@
 package restudio.reglass.client;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -18,10 +17,9 @@ public final class LiquidGlassPipelines {
         if (LIQUID_GLASS_GUI == null) {
             RenderPipeline.Builder b = RenderPipeline.builder()
                     .withLocation(Identifier.of("reglass", "pipeline/liquid_glass_gui"))
-                    .withVertexShader(Identifier.ofVanilla("core/position_tex_color"))
+                    .withVertexShader(Identifier.of("reglass", "core/blit_fullscreen"))
                     .withFragmentShader(Identifier.of("reglass", "program/liquid_glass_gui"))
                     .withUniform("Projection", UniformType.UNIFORM_BUFFER)
-                    .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
                     .withUniform("SamplerInfo", UniformType.UNIFORM_BUFFER)
                     .withUniform("CustomUniforms", UniformType.UNIFORM_BUFFER)
                     .withUniform("WidgetInfo", UniformType.UNIFORM_BUFFER)
@@ -29,9 +27,8 @@ public final class LiquidGlassPipelines {
                     .withSampler("Sampler1")
                     .withSampler("Sampler2")
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                    .withDepthWrite(false)
-                    .withBlend(BlendFunction.TRANSLUCENT_PREMULTIPLIED_ALPHA)
-                    .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS);
+                    .withDepthWrite(true)
+                    .withVertexFormat(VertexFormats.POSITION, VertexFormat.DrawMode.QUADS);
 
             LIQUID_GLASS_GUI = b.build();
             RenderSystem.getDevice().precompilePipeline(LIQUID_GLASS_GUI, null);
