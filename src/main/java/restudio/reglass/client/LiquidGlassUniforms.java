@@ -4,11 +4,14 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
+import restudio.reglass.mixin.accessor.GuiRenderStateAccessor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,14 +68,17 @@ public final class LiquidGlassUniforms {
         }
     }
 
-    public void addWidget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow) {
-        if (widgets.size() >= MAX_WIDGETS) return;
-        widgets.add(new Widget(x, y, w, h, radiusPx, text, color, shadow, null));
+    public void tryApplyBlur(DrawContext context) {
+        GuiRenderState state = context.state;
+        int blurLayer = ((GuiRenderStateAccessor)state).getBlurLayer();
+        if (blurLayer == Integer.MAX_VALUE) {
+            state.applyBlur();
+        }
     }
 
-    public void addWidget(float x, float y, float w, float h, float radiusPx, int color, boolean shadow, IconInfo iconInfo) {
+    public void addWidget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow, @Nullable IconInfo iconInfo) {
         if (widgets.size() >= MAX_WIDGETS) return;
-        widgets.add(new Widget(x, y, w, h, radiusPx, Text.empty(), color, shadow, iconInfo));
+        widgets.add(new Widget(x, y, w, h, radiusPx, text, color, shadow, iconInfo));
     }
 
     public void uploadWidgetInfo() {

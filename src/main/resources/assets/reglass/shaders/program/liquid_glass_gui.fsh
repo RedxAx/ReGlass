@@ -18,11 +18,11 @@ const float EDGE_DIM = .003;
 const float REFL_OFFSET_MIN = 0.035;
 const float REFL_OFFSET_MAG = 0.005;
 
-const float MIN_REFR_DIM = 0.02;
-const float MIN_REFR_MAG = 0.02;
-const float MIN_EDGE_DIM = .001;
-const float MIN_REFL_OFFSET_MIN = 0.01;
-const float MIN_REFL_OFFSET_MAG = 0.001;
+const float MIN_REFR_DIM = 0.002;
+const float MIN_REFR_MAG = 0.002;
+const float MIN_EDGE_DIM = .0001;
+const float MIN_REFL_OFFSET_MIN = 0.001;
+const float MIN_REFL_OFFSET_MAG = 0.0001;
 
 const float EPS_PIX = 2.;
 const float REFR_ABERRATION = 5.;
