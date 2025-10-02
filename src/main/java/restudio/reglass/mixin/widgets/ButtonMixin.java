@@ -67,8 +67,8 @@ public abstract class ButtonMixin {
                 int iconWidth = accessor.getTextureWidth();
                 int iconHeight = accessor.getTextureHeight();
 
-                int iconX = getX() + (getWidth() - iconWidth) / 2;
-                int iconY = getY() + (getHeight() - iconHeight) / 2;
+                int iconX = (getX() + (getWidth() - iconWidth) / 2) + 1;
+                int iconY = (getY() + (getHeight() - iconHeight) / 2) + 1;
 
                 Sprite iconSprite = client.getGuiAtlasManager().getSprite(accessor.getTexture());
                 GpuTextureView atlasTexture = client.getTextureManager().getTexture(iconSprite.getAtlasId()).getGlTextureView();
