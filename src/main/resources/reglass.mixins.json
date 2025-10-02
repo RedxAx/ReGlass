@@ -11,9 +11,10 @@
     "requireAnnotations": true
   },
   "client": [
-    "logical.GameRendererMixin",
     "accessor.GlGpuBufferAccessor",
     "accessor.RenderPassImplAccessor",
+    "accessor.TextIconButtonWidgetAccessor",
+    "logical.GameRendererMixin",
     "widgets.ButtonMixin"
   ]
 }

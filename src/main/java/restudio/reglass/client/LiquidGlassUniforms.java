@@ -5,6 +5,8 @@ import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 
@@ -16,7 +18,8 @@ public final class LiquidGlassUniforms {
     private static final LiquidGlassUniforms INSTANCE = new LiquidGlassUniforms();
     public static LiquidGlassUniforms get() { return INSTANCE; }
 
-    public record Widget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow) {}
+    public record IconInfo(Identifier texture, int texU, int texV, int texWidth, int texHeight) {}
+    public record Widget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow, @Nullable IconInfo iconInfo) {}
 
     private final GpuBuffer samplerInfo;
     private final GpuBuffer customUniforms;
@@ -64,7 +67,12 @@ public final class LiquidGlassUniforms {
 
     public void addWidget(float x, float y, float w, float h, float radiusPx, Text text, int color, boolean shadow) {
         if (widgets.size() >= MAX_WIDGETS) return;
-        widgets.add(new Widget(x, y, w, h, radiusPx, text, color, shadow));
+        widgets.add(new Widget(x, y, w, h, radiusPx, text, color, shadow, null));
+    }
+
+    public void addWidget(float x, float y, float w, float h, float radiusPx, int color, boolean shadow, IconInfo iconInfo) {
+        if (widgets.size() >= MAX_WIDGETS) return;
+        widgets.add(new Widget(x, y, w, h, radiusPx, Text.empty(), color, shadow, iconInfo));
     }
 
     public void uploadWidgetInfo() {

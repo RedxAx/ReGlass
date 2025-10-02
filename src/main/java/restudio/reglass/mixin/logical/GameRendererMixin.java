@@ -8,11 +8,9 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.render.BufferBuilderStorage;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -77,18 +75,63 @@ public abstract class GameRendererMixin {
             pass.drawIndexed(0, 0, 6, 1);
         }
 
-        VertexConsumerProvider.Immediate immediate = this.buffers.getEntityVertexConsumers();
+        VertexConsumerProvider.Immediate immediate = this.buffers.getEffectVertexConsumers();
         MatrixStack matrices = new MatrixStack();
         matrices.translate(0.0, 0.0, -2000.0);
-        Matrix4f matrix4f = matrices.peek().getPositionMatrix();
 
         for (LiquidGlassUniforms.Widget widget : uniforms.getWidgets()) {
             TextRenderer textRenderer = this.client.textRenderer;
-            float textX = widget.x() + widget.w() / 2.0F - textRenderer.getWidth(widget.text()) / 2.0F;
-            float textY = widget.y() + (widget.h() - 8) / 2.0F;
+            Text message = widget.text();
+            int textWidth = textRenderer.getWidth(message);
+            int textX = (int)(widget.x() + widget.w() / 2 - textWidth / 2);
+            int textY = (int)(widget.y() + (widget.h() - 8) / 2);
 
-            textRenderer.draw(widget.text(), textX, textY, widget.color(), widget.shadow(), matrix4f, immediate, TextRenderer.TextLayerType.SEE_THROUGH, 0, 15728880);
+            LiquidGlassUniforms.IconInfo iconInfo = widget.iconInfo();
+            if (iconInfo != null) {
+                int iconAndTextWidth;
+                int iconTextSpacing = 0;
+                boolean hasText = !message.getString().isEmpty();
+
+                if (hasText) {
+                    iconTextSpacing = 3;
+                    iconAndTextWidth = iconInfo.texWidth() + iconTextSpacing + textWidth;
+                } else {
+                    iconAndTextWidth = iconInfo.texWidth();
+                }
+
+                int iconX = (int)(widget.x() + (widget.w() - iconAndTextWidth) / 2);
+                int iconY = (int)(widget.y() + (widget.h() - iconInfo.texHeight()) / 2);
+
+                if (hasText) {
+                    textX = iconX + iconInfo.texWidth() + iconTextSpacing;
+                }
+
+                RenderLayer renderLayer = RenderLayer.getTextSeeThrough(iconInfo.texture());
+                VertexConsumer buffer = immediate.getBuffer(renderLayer);
+                Matrix4f matrix = matrices.peek().getPositionMatrix();
+
+                float x1 = (float)iconX;
+                float y1 = (float)iconY;
+                float x2 = (float)(iconX + iconInfo.texWidth());
+                float y2 = (float)(iconY + iconInfo.texHeight());
+
+                float u1 = 0.0F;
+                float v1 = 0.0F;
+                float u2 = 1.0F;
+                float v2 = 1.0F;
+
+                buffer.vertex(matrix, x1, y2, 0.0f).texture(u1, v2).color(255, 255, 255, 255).light(15728880);
+                buffer.vertex(matrix, x2, y2, 0.0f).texture(u2, v2).color(255, 255, 255, 255).light(15728880);
+                buffer.vertex(matrix, x2, y1, 0.0f).texture(u2, v1).color(255, 255, 255, 255).light(15728880);
+                buffer.vertex(matrix, x1, y1, 0.0f).texture(u1, v1).color(255, 255, 255, 255).light(15728880);
+            }
+
+            if (!message.getString().isEmpty()) {
+                Matrix4f matrix = matrices.peek().getPositionMatrix();
+                textRenderer.draw(message, (float)textX, (float)textY, widget.color(), widget.shadow(), matrix, immediate, TextRenderer.TextLayerType.SEE_THROUGH, 0, 15728880);
+            }
         }
+
         immediate.draw();
     }
 }

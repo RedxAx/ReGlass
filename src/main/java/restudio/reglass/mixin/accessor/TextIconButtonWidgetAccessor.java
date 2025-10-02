@@ -9,4 +9,11 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface TextIconButtonWidgetAccessor {
     @Accessor("texture")
     Identifier getTexture();
+
+    @Accessor("textureWidth")
+    int getTextureWidth();
+
+    @Accessor("textureHeight")
+    int getTextureHeight();
+
 }
