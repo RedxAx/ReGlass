@@ -35,10 +35,10 @@ public abstract class GameRendererMixin {
     private void reglass$renderLiquidGlass(CallbackInfo ci) {
         LiquidGlassUniforms uniforms = LiquidGlassUniforms.get();
         if (uniforms.getCount() > 0) {
-            // Cancel vanilla blur to run our own effect instead.
             ci.cancel();
 
             LiquidGlassPrecomputeRuntime.get().run();
+            uniforms.uploadSharedUniforms();
             uniforms.uploadWidgetInfo();
 
             Framebuffer mainFb = this.client.getFramebuffer();

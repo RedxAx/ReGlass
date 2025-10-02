@@ -5,7 +5,7 @@ uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
 
 layout(std140) uniform SamplerInfo { vec2 OutSize; vec2 InSize; };
-layout(std140) uniform CustomUniforms { float Time; vec4 Mouse; };
+layout(std140) uniform CustomUniforms { float Time; vec4 Mouse; float ScreenWantsBlur; };
 #define MAX_WIDGETS 64
 layout(std140) uniform WidgetInfo { float Count; vec4 Rects[MAX_WIDGETS]; vec4 Rads[MAX_WIDGETS]; };
 
@@ -154,11 +154,16 @@ void main()
 
     SDFResult f = fieldWidgets(p, inSize);
 
-    vec3 underlyingColor = texture(Sampler0, UV).rgb;
+    vec3 backgroundColor;
+    if (ScreenWantsBlur > 0.5) {
+        backgroundColor = texture(Sampler1, UV).rgb;
+    } else {
+        backgroundColor = texture(Sampler0, UV).rgb;
+    }
 
     float opacity = smoothstep(EPS, -EPS, f.dist);
     if (opacity <= 0.0) {
-        fragColor = vec4(underlyingColor, 1.0);
+        fragColor = vec4(backgroundColor, 1.0);
         return;
     }
 
@@ -176,7 +181,7 @@ void main()
     baseLayer(col, sh);
     tintLayer(col, sh);
 
-    col = mix(underlyingColor, col, opacity);
+    col = mix(backgroundColor, col, opacity);
 
     fragColor = vec4(col, 1.0);
 }

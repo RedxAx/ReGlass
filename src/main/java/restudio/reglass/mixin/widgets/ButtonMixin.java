@@ -1,5 +1,6 @@
 package restudio.reglass.mixin.widgets;
 
+import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gl.RenderPipelines;
@@ -9,6 +10,7 @@ import net.minecraft.client.gui.render.state.TexturedQuadGuiElementRenderState;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.PressableWidget;
 import net.minecraft.client.gui.widget.TextIconButtonWidget;
+import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.TextureSetup;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
@@ -48,7 +50,8 @@ public abstract class ButtonMixin {
 
             LiquidGlassUniforms.get().tryApplyBlur(context);
 
-            TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+            MinecraftClient client = MinecraftClient.getInstance();
+            TextRenderer textRenderer = client.textRenderer;
             int color = this.active ? 0xFFFFFF : 0xA0A0A0;
             int finalColor = color | MathHelper.ceil(this.alpha * 255.0f) << 24;
 
@@ -63,32 +66,31 @@ public abstract class ButtonMixin {
                 TextIconButtonWidgetAccessor accessor = (TextIconButtonWidgetAccessor) iconButton;
                 int iconWidth = accessor.getTextureWidth();
                 int iconHeight = accessor.getTextureHeight();
-                boolean hasText = !message.getString().isEmpty();
 
-                int iconAndTextWidth = hasText ? iconWidth + 3 + textWidth : iconWidth;
-                int iconX = getX() + (getWidth() - iconAndTextWidth) / 2;
+                int iconX = getX() + (getWidth() - iconWidth) / 2;
                 int iconY = getY() + (getHeight() - iconHeight) / 2;
 
-                if (hasText) {
-                    textX = iconX + iconWidth + 3;
-                }
+                Sprite iconSprite = client.getGuiAtlasManager().getSprite(accessor.getTexture());
+                GpuTextureView atlasTexture = client.getTextureManager().getTexture(iconSprite.getAtlasId()).getGlTextureView();
 
                 context.state.addSimpleElement(new TexturedQuadGuiElementRenderState(
                         RenderPipelines.GUI_TEXTURED,
-                        TextureSetup.of(MinecraftClient.getInstance().getTextureManager().getTexture(accessor.getTexture()).getGlTextureView()),
+                        TextureSetup.of(atlasTexture),
                         pose,
                         iconX, iconY,
                         iconX + iconWidth, iconY + iconHeight,
-                        0f, 1f, 0f, 1f,
+                        iconSprite.getMinU(), iconSprite.getMaxU(),
+                        iconSprite.getMinV(), iconSprite.getMaxV(),
                         finalColor, null
                 ));
+            } else {
+                if (!message.getString().isEmpty()) {
+                    context.state.addText(new TextGuiElementRenderState(
+                            textRenderer, message.asOrderedText(), pose, textX, textY, finalColor, 0, true, null
+                    ));
+                }
             }
 
-            if (!message.getString().isEmpty()) {
-                context.state.addText(new TextGuiElementRenderState(
-                        textRenderer, message.asOrderedText(), pose, textX, textY, finalColor, 0, true, null
-                ));
-            }
         }
     }
 }

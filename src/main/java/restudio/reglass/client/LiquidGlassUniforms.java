@@ -30,17 +30,25 @@ public final class LiquidGlassUniforms {
 
     private static final int MAX_WIDGETS = 64;
     private final List<Widget> widgets = new ArrayList<>();
+    private boolean screenWantsBlur = false;
 
     private LiquidGlassUniforms() {
         samplerInfo    = RenderSystem.getDevice().createBuffer(() -> "reglass SamplerInfo", 130, 16);
-        customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, 32);
+        customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, 48);
         int widgetInfoSize = 16 * (1 + MAX_WIDGETS + MAX_WIDGETS);
         widgetInfo     = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
     }
 
     public void beginFrame() {
         widgets.clear();
+        screenWantsBlur = false;
+    }
 
+    public void setScreenWantsBlur(boolean wantsBlur) {
+        this.screenWantsBlur = wantsBlur;
+    }
+
+    public void uploadSharedUniforms() {
         MinecraftClient mc = MinecraftClient.getInstance();
         int outW = mc.getFramebuffer().textureWidth;
         int outH = mc.getFramebuffer().textureHeight;
@@ -62,9 +70,11 @@ public final class LiquidGlassUniforms {
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(customUniforms, false, true)) {
             Std140Builder b = Std140Builder.intoBuffer(map.data());
             b.putFloat(time);
+            b.align(16);
             float x = (float) (mx[0] * scale);
             float y = fbH - (float) (my[0] * scale);
             b.putVec4(new Vector4f(x, y, 0f, 0f));
+            b.putFloat(this.screenWantsBlur ? 1.0f : 0.0f);
         }
     }
 

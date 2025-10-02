@@ -14,12 +14,11 @@
     "requireAnnotations": true
   },
   "client": [
-    "accessor.GlGpuBufferAccessor",
     "accessor.GuiRenderStateAccessor",
-    "accessor.RenderPassImplAccessor",
     "accessor.SliderWidgetAccessor",
     "accessor.TextIconButtonWidgetAccessor",
     "client.GuiRendererMixin",
+    "client.ScreenMixin",
     "logical.GameRendererMixin",
     "widgets.ButtonMixin"
   ]
