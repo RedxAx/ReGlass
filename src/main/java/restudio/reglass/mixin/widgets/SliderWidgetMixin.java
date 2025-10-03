@@ -8,15 +8,22 @@ import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import restudio.reglass.client.Config;
 import restudio.reglass.client.LiquidGlassUniforms;
 import restudio.reglass.client.api.ReGlassApi;
+import restudio.reglass.client.api.WidgetStyle;
+import restudio.reglass.client.api.model.Smoothing;
+import restudio.reglass.client.api.model.Tint;
+import restudio.reglass.mixin.accessor.SliderWidgetAccessor;
 
 @Mixin(SliderWidget.class)
 public abstract class SliderWidgetMixin extends ClickableWidget {
+
+    @Unique WidgetStyle knobStyle = new WidgetStyle().smoothing(new Smoothing(-0.005f)).tint(new Tint(0x000000, 0.1f));
 
     public SliderWidgetMixin(int x, int y, int width, int height, Text message) {
         super(x, y, width, height, message);
@@ -27,7 +34,10 @@ public abstract class SliderWidgetMixin extends ClickableWidget {
         if (Config.redesginMinecraft) {
             ci.cancel();
 
+            int knobX = (int)(this.getX() + (((SliderWidgetAccessor)this).getValue() * (this.getWidth() - 4)));
+
             ReGlassApi.create(context).fromWidget(this).render();
+            ReGlassApi.create(context).size(4, getHeight()).position(knobX, getY()).style(knobStyle).render();
 
             LiquidGlassUniforms.get().tryApplyBlur(context);
 
