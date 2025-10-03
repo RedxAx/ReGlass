@@ -5,6 +5,7 @@ import restudio.reglass.client.api.model.Edge;
 import restudio.reglass.client.api.model.Reflection;
 import restudio.reglass.client.api.model.Refraction;
 import restudio.reglass.client.api.model.RimLight;
+import restudio.reglass.client.api.model.Smoothing;
 import restudio.reglass.client.api.model.Tint;
 
 public class WidgetStyle {
@@ -13,6 +14,7 @@ public class WidgetStyle {
     Optional<Reflection> reflection = Optional.empty();
     Optional<Edge> edge = Optional.empty();
     Optional<RimLight> rimLight = Optional.empty();
+    Optional<Smoothing> smoothing = Optional.empty();
 
     public static WidgetStyle create() {
         return new WidgetStyle();
@@ -43,6 +45,11 @@ public class WidgetStyle {
         return this;
     }
 
+    public WidgetStyle smoothing(Smoothing smoothing) {
+        this.smoothing = Optional.of(smoothing);
+        return this;
+    }
+
     public Tint getTint() {
         return tint.orElse(ReGlassConfig.INSTANCE.tint);
     }
@@ -61,5 +68,9 @@ public class WidgetStyle {
 
     public RimLight getRimLight() {
         return rimLight.orElse(ReGlassConfig.INSTANCE.rimLight);
+    }
+
+    public Smoothing getSmoothing() {
+        return smoothing.orElse(ReGlassConfig.INSTANCE.smoothing);
     }
 }

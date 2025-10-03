@@ -17,6 +17,7 @@ import restudio.reglass.client.api.model.Edge;
 import restudio.reglass.client.api.model.Reflection;
 import restudio.reglass.client.api.model.Refraction;
 import restudio.reglass.client.api.model.RimLight;
+import restudio.reglass.client.api.model.Smoothing;
 import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
 import restudio.reglass.mixin.accessor.GuiRenderStateAccessor;
@@ -50,12 +51,11 @@ public final class LiquidGlassUniforms {
         calc.align(16);
         calc.putVec4();
         calc.putFloat();
-        calc.putFloat();
         int customUniformsSize = calc.get();
 
         customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, customUniformsSize);
 
-        int widgetInfoSize = 16 + (MAX_WIDGETS * (16 + 16 + 16 + 16 + 16 + 16 + 16));
+        int widgetInfoSize = 16 + (MAX_WIDGETS * (16 + 16 + 16 + 16 + 16 + 16 + 16 + 16));
         widgetInfo = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
     }
 
@@ -109,7 +109,6 @@ public final class LiquidGlassUniforms {
                     config.rimLight.intensity()
             );
 
-            b.putFloat(config.fieldSmoothing);
             b.putFloat(config.pixelEpsilon);
         }
     }
@@ -214,6 +213,15 @@ public final class LiquidGlassUniforms {
                     Edge edge = widgets.get(i).style().getEdge();
                     Reflection reflection = widgets.get(i).style().getReflection();
                     b.putVec4(edge.minDimension(), reflection.minOffsetMin(), reflection.minOffsetMagnitude(), 0);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Smoothing smoothing = widgets.get(i).style().getSmoothing();
+                    b.putVec4(smoothing.factor(), 0, 0, 0);
                 } else {
                     b.putVec4(0f, 0f, 0f, 0f);
                 }
