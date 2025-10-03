@@ -41,4 +41,11 @@ public class ScreenMixin {
             cir.setReturnValue(true);
         }
     }
+
+    @Inject(method = "renderDarkening(Lnet/minecraft/client/gui/DrawContext;)V", at = @At("HEAD"), cancellable = true)
+    private void reglass$onRenderDarkening(DrawContext context, CallbackInfo ci) {
+        if (Config.redesginMinecraft) {
+            ci.cancel();
+        }
+    }
 }
