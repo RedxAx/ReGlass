@@ -11,7 +11,6 @@ layout(std140) uniform CustomUniforms {
     float ScreenWantsBlur;
     vec3 RIM_LIGHT_VEC;
     vec4 RIM_LIGHT_COLOR;
-    float FIELD_SMOOTHING;
     float EPS_PIX;
 };
 
@@ -25,6 +24,7 @@ layout(std140) uniform WidgetInfo {
     vec4 RefractionExtras[MAX_WIDGETS];
     vec4 ReflectionParams[MAX_WIDGETS];
     vec4 ReflectionExtras[MAX_WIDGETS];
+    vec4 Smoothings[MAX_WIDGETS];
 };
 
 in vec2 texCoord;
@@ -57,46 +57,89 @@ vec3 sdgBox( in vec2 p, in vec2 b, vec4 ra ) {
     return vec3(dist, s*n);
 }
 
-SDFResult sdgSMin( in SDFResult a, in SDFResult b, in float k ) {
-    k *= 4.0;
-    float h = max( k-abs(a.dist-b.dist), 0.0 )/(2.0*k);
-    float d = min(a.dist,b.dist)-h*h*k;
-    float mixFactor = (a.dist<b.dist) ? h : 1.0-h;
-    vec2  n = normalize(mix(a.normal,b.normal,mixFactor));
-    float aspect = mix(a.aspect, b.aspect, mixFactor);
+SDFResult opSmoothUnion( in SDFResult a, in SDFResult b, in float k ) {
+    if (k == 0.0) {
+        if (a.dist < b.dist) return a;
+        return b;
+    }
+    float h = clamp( 0.5 + 0.5*(a.dist-b.dist)/k, 0.0, 1.0 );
+    float d = mix( a.dist, b.dist, h ) - k*h*(1.0-h);
+    vec2 n = normalize(mix(a.normal,b.normal,h));
+    float aspect = mix(a.aspect, b.aspect, h);
     int index = a.dist < b.dist ? a.index : b.index;
     return SDFResult(d, n, aspect, index);
 }
 
+SDFResult opHardUnion(SDFResult a, SDFResult b) {
+    return a.dist < b.dist ? a : b;
+}
+
+SDFResult opHardSubtract(SDFResult a, SDFResult b) {
+    float d = max(a.dist, -b.dist);
+    if (d == a.dist) {
+        return a;
+    } else {
+        // New surface created from b's geometry on a's material
+        return SDFResult(d, -b.normal, a.aspect, a.index);
+    }
+}
+
+
 SDFResult fieldWidgets(vec2 p, vec2 inSize) {
     int n = int(Count + 0.5);
-    SDFResult f = SDFResult(1e6, vec2(0.0), 1.0, -1);
-    bool hasAny = false;
+    if (n == 0) return SDFResult(1e6, vec2(0.0), 1.0, -1);
 
+    SDFResult positiveShapes = SDFResult(1e6, vec2(0.0), 1.0, -1);
+    bool hasPositive = false;
+
+    // Pass 1: Union all positive/neutral shapes
     for (int i = 0; i < MAX_WIDGETS; i++) {
         if (i >= n) break;
+        if (Smoothings[i].x < 0.0) continue;
+
         vec4 rc = Rects[i];
         vec4 rr = Rads[i];
-
         vec2 cPx = vec2(rc.x + 0.5*rc.z, rc.y + 0.5*rc.w);
         vec2 c = screenToUV(cPx, inSize);
         vec2 b = 0.5 * vec2(rc.z, rc.w) / inSize.y;
         vec4 rad = rr / inSize.y;
-        vec2 pLoc = p - c;
-
-        vec3 g_vec = sdgBox(pLoc, b, rad);
-
+        vec3 g_vec = sdgBox(p - c, b, rad);
         float aspect = min(rc.z, rc.w) / max(rc.z, rc.w);
         SDFResult g = SDFResult(g_vec.x, g_vec.yz, aspect, i);
 
-        if (!hasAny) {
-            f = g;
-            hasAny = true;
+        if (!hasPositive) {
+            positiveShapes = g;
+            hasPositive = true;
         } else {
-            f = sdgSMin(f, g, FIELD_SMOOTHING);
+            positiveShapes = opSmoothUnion(positiveShapes, g, Smoothings[i].x);
         }
     }
-    return f;
+
+    SDFResult finalField = positiveShapes;
+
+    // Pass 2 & 3: Subtract and re-union negative (repulsive) shapes
+    for (int i = 0; i < MAX_WIDGETS; i++) {
+        if (i >= n) break;
+        if (Smoothings[i].x >= 0.0) continue;
+
+        vec4 rc = Rects[i];
+        vec4 rr = Rads[i];
+        vec2 cPx = vec2(rc.x + 0.5*rc.z, rc.y + 0.5*rc.w);
+        vec2 c = screenToUV(cPx, inSize);
+        vec2 b = 0.5 * vec2(rc.z, rc.w) / inSize.y;
+        vec4 rad = rr / inSize.y;
+        vec3 g_vec = sdgBox(p - c, b, rad);
+        float aspect = min(rc.z, rc.w) / max(rc.z, rc.w);
+        SDFResult g = SDFResult(g_vec.x, g_vec.yz, aspect, i);
+
+        float repulsion = -Smoothings[i].x;
+        SDFResult g_expanded = SDFResult(g.dist - repulsion, g.normal, g.aspect, g.index);
+
+        finalField = opHardSubtract(finalField, g_expanded);
+        finalField = opHardUnion(finalField, g);
+    }
+
+    return finalField;
 }
 
 struct Shared {
