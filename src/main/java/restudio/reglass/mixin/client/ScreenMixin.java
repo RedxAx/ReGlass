@@ -1,6 +1,7 @@
 package restudio.reglass.mixin.client;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screen.Screen;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,9 +9,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import restudio.reglass.client.Config;
 import restudio.reglass.client.LiquidGlassUniforms;
-
-import static restudio.reglass.client.Config.redesginMinecraft;
+import restudio.reglass.mixin.accessor.GuiRenderStateAccessor;
 
 @Mixin(Screen.class)
 public class ScreenMixin {
@@ -23,12 +24,20 @@ public class ScreenMixin {
         LiquidGlassUniforms.get().setScreenWantsBlur(true);
     }
 
+    @Inject(method = "applyBlur", at = @At("HEAD"), cancellable = true)
+    private void reglass$checkBeforeBlur(DrawContext context, CallbackInfo ci) {
+        GuiRenderState state = context.state;
+        int blurLayer = ((GuiRenderStateAccessor)state).getBlurLayer();
+        if (blurLayer != Integer.MAX_VALUE) {
+            ci.cancel();
+        }
+    }
+
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void onKeyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (keyCode == GLFW.GLFW_KEY_V) {
-            redesginMinecraft = !redesginMinecraft;
-            System.out.println("Redesign Minecraft: " + redesginMinecraft);
+            Config.redesginMinecraft = !Config.redesginMinecraft;
             cir.setReturnValue(true);
         }
     }
