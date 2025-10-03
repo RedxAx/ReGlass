@@ -6,6 +6,7 @@ import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.util.math.ColorHelper;
 import org.joml.Vector2f;
@@ -16,7 +17,6 @@ import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.api.model.Edge;
 import restudio.reglass.client.api.model.Reflection;
 import restudio.reglass.client.api.model.Refraction;
-import restudio.reglass.client.api.model.RimLight;
 import restudio.reglass.client.api.model.Smoothing;
 import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
@@ -55,7 +55,7 @@ public final class LiquidGlassUniforms {
 
         customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, customUniformsSize);
 
-        int widgetInfoSize = 16 + (MAX_WIDGETS * (16 + 16 + 16 + 16 + 16 + 16 + 16 + 16));
+        int widgetInfoSize = 16 + (MAX_WIDGETS * (16 + 16 + 16 + 16 + 16 + 16 + 16 + 16 + 16));
         widgetInfo = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
     }
 
@@ -222,6 +222,24 @@ public final class LiquidGlassUniforms {
                 if (i < widgets.size()) {
                     Smoothing smoothing = widgets.get(i).style().getSmoothing();
                     b.putVec4(smoothing.factor(), 0, 0, 0);
+                } else {
+                    b.putVec4(0f, 0f, 0f, 0f);
+                }
+            }
+
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    LiquidGlassGuiElementRenderState widget = widgets.get(i);
+                    ScreenRect scissor = widget.scissorArea();
+                    if (scissor != null) {
+                        float sLeft = scissor.getLeft() * scale;
+                        float sRight = scissor.getRight() * scale;
+                        float sTop = scissor.getTop() * scale;
+                        float sBottom = scissor.getBottom() * scale;
+                        b.putVec4(sLeft, fbH - sBottom, sRight, fbH - sTop);
+                    } else {
+                        b.putVec4(0f, 0f, (float) mc.getFramebuffer().textureWidth, (float) mc.getFramebuffer().textureHeight);
+                    }
                 } else {
                     b.putVec4(0f, 0f, 0f, 0f);
                 }

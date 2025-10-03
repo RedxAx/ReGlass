@@ -1,13 +1,18 @@
 package restudio.reglass.client.api;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.ScreenRect;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3x2f;
+import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
+import restudio.reglass.mixin.accessor.DrawContextAccessor;
 
 public final class ReGlassApi {
     private ReGlassApi() {}
+    public static WidgetStyle inactiveStyle = new WidgetStyle().tint(new Tint(0x000000, 0.3f));
 
     public static ReGlassConfig getGlobalConfig() {
         return ReGlassConfig.INSTANCE;
@@ -68,8 +73,9 @@ public final class ReGlassApi {
 
         public void render() {
             float finalCornerRadius = this.cornerRadius < 0 ? 0.5f * Math.min(this.width, this.height) : this.cornerRadius;
-
-            context.state.addSpecialElement(new LiquidGlassGuiElementRenderState(this.x, this.y, this.x + this.width, this.y + this.height, finalCornerRadius, this.text, this.style));
+            Matrix3x2f pose = new Matrix3x2f(context.getMatrices());
+            ScreenRect scissorRect = ((DrawContextAccessor) context).getScissorStack().peekLast();
+            context.state.addSpecialElement(new LiquidGlassGuiElementRenderState(this.x, this.y, this.x + this.width, this.y + this.height, finalCornerRadius, this.text, this.style, pose, scissorRect));
         }
     }
 }

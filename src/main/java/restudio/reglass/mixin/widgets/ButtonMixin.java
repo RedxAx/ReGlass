@@ -26,6 +26,8 @@ import restudio.reglass.client.Config;
 import restudio.reglass.client.LiquidGlassUniforms;
 import restudio.reglass.client.LiquidGlassWidget;
 import restudio.reglass.client.api.ReGlassApi;
+import restudio.reglass.client.api.WidgetStyle;
+import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.mixin.accessor.TextIconButtonWidgetAccessor;
 
 @Mixin(ClickableWidget.class)
@@ -38,13 +40,14 @@ public abstract class ButtonMixin {
     @Shadow protected float alpha;
     @Shadow public boolean active;
 
+
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/ClickableWidget;renderWidget(Lnet/minecraft/client/gui/DrawContext;IIF)V"), cancellable = true)
     private void onRender(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         ClickableWidget widget = (ClickableWidget) (Object) this;
         if (Config.redesginMinecraft && widget instanceof PressableWidget && !(widget instanceof LiquidGlassWidget)) {
             ci.cancel();
 
-            ReGlassApi.create(context).fromWidget(widget).render();
+            ReGlassApi.create(context).fromWidget(widget).style(active ? new WidgetStyle() : ReGlassApi.inactiveStyle).render();
 
             LiquidGlassUniforms.get().tryApplyBlur(context);
 

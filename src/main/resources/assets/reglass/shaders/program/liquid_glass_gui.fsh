@@ -25,6 +25,7 @@ layout(std140) uniform WidgetInfo {
     vec4 ReflectionParams[MAX_WIDGETS];
     vec4 ReflectionExtras[MAX_WIDGETS];
     vec4 Smoothings[MAX_WIDGETS];
+    vec4 ScissorRects[MAX_WIDGETS];
 };
 
 in vec2 texCoord;
@@ -91,11 +92,17 @@ SDFResult fieldWidgets(vec2 p, vec2 inSize) {
 
     SDFResult positiveShapes = SDFResult(1e6, vec2(0.0), 1.0, -1);
     bool hasPositive = false;
+    vec2 fragCoord = gl_FragCoord.xy;
 
     // Pass 1: Union all positive/neutral shapes
     for (int i = 0; i < MAX_WIDGETS; i++) {
         if (i >= n) break;
         if (Smoothings[i].x < 0.0) continue;
+
+        vec4 scissor = ScissorRects[i];
+        if (fragCoord.x < scissor.x || fragCoord.y < scissor.y || fragCoord.x > scissor.z || fragCoord.y > scissor.w) {
+            continue;
+        }
 
         vec4 rc = Rects[i];
         vec4 rr = Rads[i];
@@ -121,6 +128,11 @@ SDFResult fieldWidgets(vec2 p, vec2 inSize) {
     for (int i = 0; i < MAX_WIDGETS; i++) {
         if (i >= n) break;
         if (Smoothings[i].x >= 0.0) continue;
+
+        vec4 scissor = ScissorRects[i];
+        if (fragCoord.x < scissor.x || fragCoord.y < scissor.y || fragCoord.x > scissor.z || fragCoord.y > scissor.w) {
+            continue;
+        }
 
         vec4 rc = Rects[i];
         vec4 rr = Rads[i];
