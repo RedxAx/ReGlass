@@ -8,13 +8,11 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.level.storage.LevelSummary;
 import org.slf4j.Logger;
 import restudio.reglass.client.api.ReGlassApi;
 import restudio.reglass.client.api.WidgetStyle;
-import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.client.screen.widget.ScrollableListWidget;
 import restudio.reglass.client.screen.world.CustomWorldSelectScreen;
 
@@ -37,9 +35,9 @@ public class WorldListEntryWidget extends ScrollableListWidget.Entry<WorldListEn
     private final CustomWorldSelectScreen parent;
     private final LevelSummary summary;
     private final Identifier iconId;
-    private final WidgetStyle defaultStyle = new WidgetStyle().tint(new Tint(0x000000, 0.1f));
-    private final WidgetStyle hoveredStyle = new WidgetStyle().tint(new Tint(0xFFFFFF, 0.1f));
-    private final WidgetStyle selectedStyle = new WidgetStyle().tint(new Tint(0xFFFFFF, 0.2f));
+    private final WidgetStyle defaultStyle = new WidgetStyle().tint(0x000000, 0.1f);
+    private final WidgetStyle hoveredStyle = new WidgetStyle().tint(0xFFFFFF, 0.1f);
+    private final WidgetStyle selectedStyle = new WidgetStyle().tint(0xFFFFFF, 0.2f);
 
     private NativeImageBackedTexture iconTexture;
 

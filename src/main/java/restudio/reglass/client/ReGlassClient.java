@@ -1,6 +1,8 @@
 package restudio.reglass.client;
 
+import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -9,51 +11,51 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import restudio.reglass.client.api.ReGlassApi;
 import restudio.reglass.client.api.WidgetStyle;
-import restudio.reglass.client.api.model.RimLight;
-import restudio.reglass.client.api.model.Tint;
+import restudio.reglass.client.config.ReGlassSettingsIO;
+import restudio.reglass.client.screen.config.ReGlassConfigScreen;
 
 public class ReGlassClient implements ClientModInitializer {
-    private static KeyBinding widgetToggle;
+    private static KeyBinding playgroundKey;
+    private static KeyBinding configKey;
+
     public static MinecraftClient minecraftClient;
 
     @Override
     public void onInitializeClient() {
         minecraftClient = MinecraftClient.getInstance();
 
-        widgetToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "Widget Based Liquid Glass",
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_H,
-                "Liquid Glass"
-        ));
+        playgroundKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("ReGlass Playground", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "Liquid Glass"));
+        configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("ReGlass Config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "Liquid Glass"));
+
+        ReGlassSettingsIO.loadIntoMemory();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (widgetToggle.wasPressed()) {
-                client.setScreen(new TestScreen());
+            if (configKey.wasPressed()) {
+                client.setScreen(new ReGlassConfigScreen(null));
+            }
+            if (playgroundKey.wasPressed()) {
+                client.setScreen(new PlaygroundScreen());
             }
         });
     }
 
-    private static class TestScreen extends Screen {
+    public static class PlaygroundScreen extends Screen {
         private boolean blur;
         private WidgetStyle customStyle;
 
-        protected TestScreen() {
-            super(Text.literal("Glass Test"));
+        public PlaygroundScreen() {
+            super(Text.literal("ReGlass Playground"));
         }
 
         @Override
         protected void init() {
             super.init();
 
-            customStyle = WidgetStyle.create().tint(new Tint(Formatting.GOLD.getColorValue(), 0.4f));
+            customStyle = WidgetStyle.create().tint(Formatting.GOLD.getColorValue(), 0.4f).blurRadius(0).shadow(25f, 0.2f, 0f, 3f).smoothing(.05f).shadowColor(0x000000, 1.0f);
             addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50, customStyle).setMoveable(true));
+            addDrawableChild(ButtonWidget.builder(Text.literal("Toggle BG Blur"), b -> blur = !blur).dimensions(10, 10, 120, 20).build());
         }
 
         @Override
@@ -67,14 +69,10 @@ public class ReGlassClient implements ClientModInitializer {
             if (blur) super.renderBackground(context, mouseX, mouseY, delta);
         }
 
-        public void toggleBlur() {
-            blur = !blur;
-        }
-
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (button == 1) {
-                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100, null)).setMoveable(true);
+                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100, WidgetStyle.create().smoothing(.05f))).setMoveable(true);
                 return true;
             }
             return super.mouseClicked(mouseX, mouseY, button);

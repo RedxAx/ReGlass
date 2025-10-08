@@ -5,6 +5,9 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.util.List;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.render.GameRenderer;
@@ -18,9 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import restudio.reglass.client.LiquidGlassPipelines;
 import restudio.reglass.client.LiquidGlassPrecomputeRuntime;
 import restudio.reglass.client.LiquidGlassUniforms;
-
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
+import restudio.reglass.client.api.ReGlassConfig;
+import restudio.reglass.client.runtime.ReGlassAnim;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -29,6 +31,14 @@ public abstract class GameRendererMixin {
     @Inject(method = "render", at = @At("HEAD"))
     private void reglass$beginGuiFrame(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
         LiquidGlassUniforms.get().beginFrame();
+        double deltaTicks;
+        try {
+            deltaTicks = tickCounter.getDynamicDeltaTicks();
+        } catch (Throwable t) {
+            deltaTicks = 1.0 / 60.0 * 20.0;
+        }
+        double dt = deltaTicks / 20.0;
+        ReGlassAnim.INSTANCE.update(ReGlassConfig.INSTANCE, dt);
     }
 
     @Inject(method = "renderBlur", at = @At("HEAD"), cancellable = true)
@@ -36,14 +46,12 @@ public abstract class GameRendererMixin {
         LiquidGlassUniforms uniforms = LiquidGlassUniforms.get();
         if (uniforms.getCount() > 0) {
             ci.cancel();
-
             uniforms.uploadSharedUniforms();
             uniforms.uploadWidgetInfo();
-
+            List<Integer> radii = uniforms.getUsedBlurRadiiOrdered();
+            LiquidGlassPrecomputeRuntime.get().setRequestedRadii(radii);
             LiquidGlassPrecomputeRuntime.get().run();
-
             Framebuffer mainFb = this.client.getFramebuffer();
-
             try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
                     () -> "reglass liquid glass pass",
                     mainFb.getColorAttachmentView(),
@@ -59,16 +67,33 @@ public abstract class GameRendererMixin {
                 pass.setUniform("CustomUniforms", uniforms.getCustomUniformsBuffer());
                 pass.setUniform("WidgetInfo", uniforms.getWidgetInfoBuffer());
                 pass.setUniform("BgConfig", uniforms.getBgConfigBuffer());
-
                 pass.bindSampler("Sampler0", mainFb.getColorAttachmentView());
-                pass.bindSampler("Sampler1", LiquidGlassPrecomputeRuntime.get().getBlurredView());
 
                 GpuBuffer quadVB = RenderSystem.getQuadVertexBuffer();
                 RenderSystem.ShapeIndexBuffer quadIBInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
-                GpuBuffer quadIB = quadIBInfo.getIndexBuffer(6);
-
+                com.mojang.blaze3d.buffers.GpuBuffer quadIB = quadIBInfo.getIndexBuffer(6);
                 pass.setVertexBuffer(0, quadVB);
                 pass.setIndexBuffer(quadIB, quadIBInfo.getIndexType());
+                for (int i = 0; i < 5; i++) {
+                    String samplerName = switch (i) {
+                        case 0 -> "Sampler1";
+                        case 1 -> "Sampler2";
+                        case 2 -> "Sampler3";
+                        case 3 -> "Sampler4";
+                        default -> "Sampler5";
+                    };
+                    if (i < radii.size()) {
+                        int r = radii.get(i);
+                        if (r <= 0) pass.bindSampler(samplerName, mainFb.getColorAttachmentView());
+                        else pass.bindSampler(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r));
+                    } else {
+                        if (!radii.isEmpty()) {
+                            int r0 = radii.getFirst();
+                            if (r0 <= 0) pass.bindSampler(samplerName, mainFb.getColorAttachmentView());
+                            else pass.bindSampler(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r0));
+                        } else pass.bindSampler(samplerName, mainFb.getColorAttachmentView());
+                    }
+                }
                 pass.drawIndexed(0, 0, 6, 1);
             }
         }

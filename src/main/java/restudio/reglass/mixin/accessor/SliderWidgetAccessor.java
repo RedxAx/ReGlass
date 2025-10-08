@@ -8,4 +8,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface SliderWidgetAccessor {
     @Accessor("value")
     double getValue();
+
+    @Accessor("value")
+    void setValuePublic(double value);
 }

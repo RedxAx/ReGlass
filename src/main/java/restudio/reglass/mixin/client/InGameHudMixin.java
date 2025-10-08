@@ -15,25 +15,39 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import restudio.reglass.client.Config;
 import restudio.reglass.client.LiquidGlassUniforms;
 import restudio.reglass.client.api.ReGlassApi;
+import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.api.WidgetStyle;
-import restudio.reglass.client.api.model.Smoothing;
-import restudio.reglass.client.api.model.Tint;
 
 @Mixin(InGameHud.class)
 public abstract class InGameHudMixin {
 
     @Shadow @Final private MinecraftClient client;
-    @Shadow protected abstract void renderHotbarItem(DrawContext context, int x, int y, RenderTickCounter tickCounter, PlayerEntity player, ItemStack stack, int seed);
+
+    @Shadow
+    protected abstract void renderHotbarItem(
+            DrawContext context,
+            int x,
+            int y,
+            RenderTickCounter tickCounter,
+            PlayerEntity player,
+            ItemStack stack,
+            int seed
+    );
 
     @Unique private double reglass$slotBlobX = Double.NaN;
     @Unique private int reglass$lastSelected = -1;
 
     @Inject(method = "renderHotbar", at = @At("HEAD"), cancellable = true)
-    private void reglass$onRenderHotbar(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        if (!Config.redesginMinecraft || this.client.interactionManager.getCurrentGameMode() == GameMode.SPECTATOR) {
+    private void reglass$onRenderHotbar(
+            DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci
+    ) {
+        if (!ReGlassConfig.INSTANCE.features.enableRedesign
+                || !ReGlassConfig.INSTANCE.features.hotbar) {
+            return;
+        }
+        if (this.client.interactionManager.getCurrentGameMode() == GameMode.SPECTATOR) {
             return;
         }
 
@@ -58,7 +72,7 @@ public abstract class InGameHudMixin {
         ReGlassApi.create(context)
                 .dimensions(x, y, hotbarWidth, hotbarHeight)
                 .cornerRadius(11)
-                .style(new WidgetStyle().tint(new Tint(0x000000, 0.3f)))
+                .style(new WidgetStyle().tint(0x000000, 0.3f))
                 .render();
 
         int selectedSlot = player.getInventory().getSelectedSlot();
@@ -83,9 +97,9 @@ public abstract class InGameHudMixin {
 
         this.reglass$slotBlobX += (targetCircleX - this.reglass$slotBlobX) * alpha;
 
-        int circleX = (int)Math.round(this.reglass$slotBlobX);
+        int circleX = (int) Math.round(this.reglass$slotBlobX);
 
-        WidgetStyle selectorStyle = new WidgetStyle().smoothing(new Smoothing(-0.005f));
+        WidgetStyle selectorStyle = new WidgetStyle().smoothing(-0.005f);
 
         ReGlassApi.create(context)
                 .dimensions(circleX, y, hotbarHeight, hotbarHeight)
@@ -96,7 +110,15 @@ public abstract class InGameHudMixin {
         for (int i = 0; i < 9; ++i) {
             int itemX = x + 3 + i * 20;
             int itemY = y + 3;
-            this.renderHotbarItem(context, itemX, itemY, tickCounter, player, player.getInventory().getStack(i), i + 1);
+            this.renderHotbarItem(
+                    context,
+                    itemX,
+                    itemY,
+                    tickCounter,
+                    player,
+                    player.getInventory().getStack(i),
+                    i + 1
+            );
         }
 
         LiquidGlassUniforms.get().tryApplyBlur(context);

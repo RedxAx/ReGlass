@@ -6,13 +6,12 @@ import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2f;
-import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
 import restudio.reglass.mixin.accessor.DrawContextAccessor;
 
 public final class ReGlassApi {
     private ReGlassApi() {}
-    public static WidgetStyle inactiveStyle = new WidgetStyle().tint(new Tint(0x000000, 0.3f));
+    public static WidgetStyle inactiveStyle = new WidgetStyle().tint(0x000000, 0.3f);
 
     public static ReGlassConfig getGlobalConfig() {
         return ReGlassConfig.INSTANCE;

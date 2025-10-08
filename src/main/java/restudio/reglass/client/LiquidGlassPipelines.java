@@ -26,6 +26,10 @@ public final class LiquidGlassPipelines {
                     .withUniform("BgConfig", UniformType.UNIFORM_BUFFER)
                     .withSampler("Sampler0")
                     .withSampler("Sampler1")
+                    .withSampler("Sampler2")
+                    .withSampler("Sampler3")
+                    .withSampler("Sampler4")
+                    .withSampler("Sampler5")
                     .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
                     .withDepthWrite(false)
                     .withVertexFormat(VertexFormats.POSITION, VertexFormat.DrawMode.QUADS);

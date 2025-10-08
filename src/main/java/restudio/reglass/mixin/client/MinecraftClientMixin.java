@@ -24,7 +24,7 @@ public abstract class MinecraftClientMixin {
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
-        if (Config.redesginMinecraft) {
+        if (Config.redesginMinecraft && false) { //Commited by mistake last time, heavy WIP.
             if (screen instanceof SelectWorldScreen) {
                 setScreen(new CustomWorldSelectScreen(currentScreen));
                 ci.cancel();
