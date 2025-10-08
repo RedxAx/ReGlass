@@ -37,9 +37,10 @@ public abstract class GameRendererMixin {
         if (uniforms.getCount() > 0) {
             ci.cancel();
 
-            LiquidGlassPrecomputeRuntime.get().run();
             uniforms.uploadSharedUniforms();
             uniforms.uploadWidgetInfo();
+
+            LiquidGlassPrecomputeRuntime.get().run();
 
             Framebuffer mainFb = this.client.getFramebuffer();
 
@@ -57,10 +58,10 @@ public abstract class GameRendererMixin {
                 pass.setUniform("SamplerInfo", uniforms.getSamplerInfoBuffer());
                 pass.setUniform("CustomUniforms", uniforms.getCustomUniformsBuffer());
                 pass.setUniform("WidgetInfo", uniforms.getWidgetInfoBuffer());
+                pass.setUniform("BgConfig", uniforms.getBgConfigBuffer());
 
                 pass.bindSampler("Sampler0", mainFb.getColorAttachmentView());
                 pass.bindSampler("Sampler1", LiquidGlassPrecomputeRuntime.get().getBlurredView());
-                pass.bindSampler("Sampler2", LiquidGlassPrecomputeRuntime.get().getBloomView());
 
                 GpuBuffer quadVB = RenderSystem.getQuadVertexBuffer();
                 RenderSystem.ShapeIndexBuffer quadIBInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);

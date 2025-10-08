@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "accessor.GuiRendererAccessor",
+    "client.MinecraftClientMixin",
     "widgets.SliderWidgetMixin",
     "widgets.TooltipStateMixin"
   ],

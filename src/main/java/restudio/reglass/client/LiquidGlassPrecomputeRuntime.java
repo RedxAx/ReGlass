@@ -16,6 +16,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.resource.Resource;
 import net.minecraft.util.Identifier;
+import restudio.reglass.client.api.ReGlassConfig;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -28,26 +29,27 @@ public final class LiquidGlassPrecomputeRuntime {
     public static LiquidGlassPrecomputeRuntime get() { return INSTANCE; }
 
     private RenderPipeline blurPipeline;
-    private RenderPipeline bloomPipeline;
+
+    private GpuTexture blurTempTex;
+    private GpuTextureView blurTempView;
 
     private GpuTexture blurredTex;
     private GpuTextureView blurredView;
-    private GpuTexture bloomTex;
-    private GpuTextureView bloomView;
 
     private GpuBuffer samplerInfoUbo;
     private GpuBuffer blurConfigUboX;
     private GpuBuffer blurConfigUboY;
 
-    private static final Identifier VS_ID = Identifier.of("reglass", "core/blit_fullscreen");
+    private static final int MAX_RADIUS = 64;
+
+    private static final Identifier VS_ID   = Identifier.of("reglass", "core/blit_fullscreen");
     private static final Identifier BLUR_ID = Identifier.of("reglass", "program/blur");
-    private static final Identifier BLOOM_ID = Identifier.of("reglass", "program/bloom");
 
     private LiquidGlassPrecomputeRuntime() {}
 
-    private static String loadResourceText(Identifier idWithShaderFolderAndExt) {
+    private static String loadResourceText(Identifier id) {
         try {
-            Resource res = MinecraftClient.getInstance().getResourceManager().getResource(idWithShaderFolderAndExt).orElse(null);
+            Resource res = MinecraftClient.getInstance().getResourceManager().getResource(id).orElse(null);
             if (res == null) return null;
             try (BufferedReader br = new BufferedReader(new InputStreamReader(res.getInputStream(), StandardCharsets.UTF_8))) {
                 StringBuilder sb = new StringBuilder();
@@ -84,40 +86,30 @@ public final class LiquidGlassPrecomputeRuntime {
                     .build();
             RenderSystem.getDevice().precompilePipeline(blurPipeline, sourceGetter);
         }
-        if (bloomPipeline == null) {
-            bloomPipeline = RenderPipeline.builder()
-                    .withLocation(Identifier.of("reglass", "pipeline/bloom"))
-                    .withVertexShader(VS_ID)
-                    .withFragmentShader(BLOOM_ID)
-                    .withUniform("Projection", net.minecraft.client.gl.UniformType.UNIFORM_BUFFER)
-                    .withUniform("SamplerInfo", net.minecraft.client.gl.UniformType.UNIFORM_BUFFER)
-                    .withSampler("iChannel0Sampler")
-                    .withSampler("iChannel1Sampler")
-                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                    .withDepthWrite(false)
-                    .withVertexFormat(VertexFormats.POSITION, VertexFormat.DrawMode.QUADS)
-                    .build();
-            RenderSystem.getDevice().precompilePipeline(bloomPipeline, sourceGetter);
-        }
 
         if (samplerInfoUbo == null) {
             samplerInfoUbo = RenderSystem.getDevice().createBuffer(() -> "reglass SamplerInfo (pre)", 130, 16);
         }
+
+        int blurConfigSize = 16 + (MAX_RADIUS + 1) * 16;
         if (blurConfigUboX == null) {
-            blurConfigUboX = RenderSystem.getDevice().createBuffer(() -> "reglass BlurConfig X", 130, 16);
-            try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(blurConfigUboX, false, true)) {
-                Std140Builder.intoBuffer(map.data()).putVec2(1f, 0f);
-            }
+            blurConfigUboX = RenderSystem.getDevice().createBuffer(() -> "reglass BlurConfig X", 130, blurConfigSize);
         }
         if (blurConfigUboY == null) {
-            blurConfigUboY = RenderSystem.getDevice().createBuffer(() -> "reglass BlurConfig Y", 130, 16);
-            try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(blurConfigUboY, false, true)) {
-                Std140Builder.intoBuffer(map.data()).putVec2(0f, 1f);
-            }
+            blurConfigUboY = RenderSystem.getDevice().createBuffer(() -> "reglass BlurConfig Y", 130, blurConfigSize);
         }
     }
 
     private void ensureTargets(int w, int h) {
+        if (blurTempTex == null || blurTempTex.getWidth(0) != w || blurTempTex.getHeight(0) != h) {
+            if (blurTempTex != null) {
+                if (blurTempView != null) blurTempView.close();
+                blurTempTex.close();
+            }
+            blurTempTex = RenderSystem.getDevice().createTexture("reglass blurTemp", 12, TextureFormat.RGBA8, w, h, 1, 1);
+            blurTempTex.setTextureFilter(FilterMode.LINEAR, false);
+            blurTempView = RenderSystem.getDevice().createTextureView(blurTempTex);
+        }
         if (blurredTex == null || blurredTex.getWidth(0) != w || blurredTex.getHeight(0) != h) {
             if (blurredTex != null) {
                 if (blurredView != null) blurredView.close();
@@ -127,14 +119,35 @@ public final class LiquidGlassPrecomputeRuntime {
             blurredTex.setTextureFilter(FilterMode.LINEAR, false);
             blurredView = RenderSystem.getDevice().createTextureView(blurredTex);
         }
-        if (bloomTex == null || bloomTex.getWidth(0) != w || bloomTex.getHeight(0) != h) {
-            if (bloomTex != null) {
-                if (bloomView != null) bloomView.close();
-                bloomTex.close();
+    }
+
+    private static float[] gaussian(int radius) {
+        radius = Math.max(0, Math.min(radius, MAX_RADIUS));
+        float sigma = radius / 3.0f;
+        if (radius == 0) return new float[]{1f};
+        float[] kernel = new float[radius + 1];
+        float sum = 0f;
+        for (int i = 0; i <= radius; i++) {
+            float d = i;
+            float w = (float)Math.exp(-0.5 * (d*d)/(sigma*sigma));
+            kernel[i] = w;
+            sum += (i == 0) ? w : (2f * w);
+        }
+        for (int i = 0; i <= radius; i++) kernel[i] /= sum;
+        return kernel;
+    }
+
+    private void uploadBlur(GpuBuffer ubo, float dx, float dy, int radius) {
+        radius = Math.max(0, Math.min(radius, MAX_RADIUS));
+        float[] weights = gaussian(radius);
+        try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(ubo, false, true)) {
+            Std140Builder b = Std140Builder.intoBuffer(map.data());
+            b.putVec4(dx, dy, (float)radius, 0f);
+            for (int i = 0; i <= MAX_RADIUS; i++) {
+                float w = (i <= radius) ? weights[i] : 0f;
+                b.putFloat(w);
+                b.align(16);
             }
-            bloomTex = RenderSystem.getDevice().createTexture("reglass bloom", 12, TextureFormat.RGBA8, w, h, 1, 1);
-            bloomTex.setTextureFilter(FilterMode.LINEAR, false);
-            bloomView = RenderSystem.getDevice().createTextureView(bloomTex);
         }
     }
 
@@ -152,50 +165,38 @@ public final class LiquidGlassPrecomputeRuntime {
             Std140Builder.intoBuffer(map.data()).putVec2((float) w, (float) h).putVec2((float) w, (float) h);
         }
 
+        int radius = Math.max(0, Math.min(ReGlassConfig.INSTANCE.blurRadius, MAX_RADIUS));
+        uploadBlur(blurConfigUboX, 1f, 0f, radius);
+        uploadBlur(blurConfigUboY, 0f, 1f, radius);
+
         var ce = RenderSystem.getDevice().createCommandEncoder();
-
         var quadVB = RenderSystem.getQuadVertexBuffer();
-        var idxBufInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
-        var ib = idxBufInfo.getIndexBuffer(6);
-        var itype = idxBufInfo.getIndexType();
+        var idxInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
+        var ib = idxInfo.getIndexBuffer(6);
+        var it = idxInfo.getIndexType();
 
-        try (RenderPass pass = ce.createRenderPass(() -> "reglass blur X",
-                blurredView, java.util.OptionalInt.empty())) {
+        try (RenderPass pass = ce.createRenderPass(() -> "reglass blur X", blurTempView, java.util.OptionalInt.empty())) {
             pass.setPipeline(blurPipeline);
             RenderSystem.bindDefaultUniforms(pass);
             pass.setUniform("SamplerInfo", samplerInfoUbo);
             pass.setUniform("Config", blurConfigUboX);
             pass.bindSampler("DiffuseSampler", main.getColorAttachmentView());
             pass.setVertexBuffer(0, quadVB);
-            pass.setIndexBuffer(ib, itype);
+            pass.setIndexBuffer(ib, it);
             pass.drawIndexed(0, 0, 6, 1);
         }
 
-        try (RenderPass pass = ce.createRenderPass(() -> "reglass blur Y",
-                blurredView, java.util.OptionalInt.empty())) {
+        try (RenderPass pass = ce.createRenderPass(() -> "reglass blur Y", blurredView, java.util.OptionalInt.empty())) {
             pass.setPipeline(blurPipeline);
             RenderSystem.bindDefaultUniforms(pass);
             pass.setUniform("SamplerInfo", samplerInfoUbo);
             pass.setUniform("Config", blurConfigUboY);
-            pass.bindSampler("DiffuseSampler", blurredView);
+            pass.bindSampler("DiffuseSampler", blurTempView);
             pass.setVertexBuffer(0, quadVB);
-            pass.setIndexBuffer(ib, itype);
-            pass.drawIndexed(0, 0, 6, 1);
-        }
-
-        try (RenderPass pass = ce.createRenderPass(() -> "reglass bloom",
-                bloomView, java.util.OptionalInt.empty())) {
-            pass.setPipeline(bloomPipeline);
-            RenderSystem.bindDefaultUniforms(pass);
-            pass.setUniform("SamplerInfo", samplerInfoUbo);
-            pass.bindSampler("iChannel0Sampler", main.getColorAttachmentView());
-            pass.bindSampler("iChannel1Sampler", blurredView);
-            pass.setVertexBuffer(0, quadVB);
-            pass.setIndexBuffer(ib, itype);
+            pass.setIndexBuffer(ib, it);
             pass.drawIndexed(0, 0, 6, 1);
         }
     }
 
     public GpuTextureView getBlurredView() { return blurredView; }
-    public GpuTextureView getBloomView()   { return bloomView; }
 }

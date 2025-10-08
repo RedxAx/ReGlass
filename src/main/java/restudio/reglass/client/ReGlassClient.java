@@ -52,7 +52,7 @@ public class ReGlassClient implements ClientModInitializer {
         protected void init() {
             super.init();
 
-            customStyle = WidgetStyle.create().tint(new Tint(Formatting.GOLD.getColorValue(), 0.4f)).rimLight(new RimLight(new Vector2f(0.5f, -0.5f), 0xFFEEEE, 0.5f));
+            customStyle = WidgetStyle.create().tint(new Tint(Formatting.GOLD.getColorValue(), 0.4f));
             addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50, customStyle).setMoveable(true));
         }
 

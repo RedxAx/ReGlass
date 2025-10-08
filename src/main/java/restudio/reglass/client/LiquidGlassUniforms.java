@@ -14,9 +14,7 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import restudio.reglass.client.api.ReGlassConfig;
-import restudio.reglass.client.api.model.Edge;
-import restudio.reglass.client.api.model.Reflection;
-import restudio.reglass.client.api.model.Refraction;
+import restudio.reglass.client.api.model.Optics;
 import restudio.reglass.client.api.model.Smoothing;
 import restudio.reglass.client.api.model.Tint;
 import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
@@ -33,6 +31,7 @@ public final class LiquidGlassUniforms {
     private final GpuBuffer samplerInfo;
     private final GpuBuffer customUniforms;
     private final GpuBuffer widgetInfo;
+    private final GpuBuffer bgConfig;
 
     private static final int MAX_WIDGETS = 64;
     private final List<LiquidGlassGuiElementRenderState> widgets = new ArrayList<>();
@@ -51,12 +50,20 @@ public final class LiquidGlassUniforms {
         calc.align(16);
         calc.putVec4();
         calc.putFloat();
+        calc.putFloat();
         int customUniformsSize = calc.get();
 
         customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, customUniformsSize);
 
-        int widgetInfoSize = 16 + (MAX_WIDGETS * (16 + 16 + 16 + 16 + 16 + 16 + 16 + 16 + 16));
+        int widgetInfoSize = 16 + MAX_WIDGETS * (16 * 11);
         widgetInfo = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
+
+        Std140SizeCalculator bcalc = new Std140SizeCalculator();
+        bcalc.putFloat();
+        bcalc.putFloat();
+        bcalc.putVec2();
+        int bgConfigSize = bcalc.get();
+        bgConfig = RenderSystem.getDevice().createBuffer(() -> "reglass BgConfig", 130, bgConfigSize);
     }
 
     public void beginFrame() {
@@ -98,8 +105,8 @@ public final class LiquidGlassUniforms {
             b.putFloat(this.screenWantsBlur ? 1.0f : 0.0f);
             b.align(16);
 
-            Vector2f direction2D = config.rimLight.direction();
-            b.putVec3(new Vector3f(direction2D.x, direction2D.y, 0.0f));
+            Vector2f dir2 = config.rimLight.direction();
+            b.putVec3(new Vector3f(dir2.x, dir2.y, 0.0f));
 
             b.align(16);
             b.putVec4(
@@ -110,6 +117,14 @@ public final class LiquidGlassUniforms {
             );
 
             b.putFloat(config.pixelEpsilon);
+            b.putFloat(config.debugStep);
+        }
+
+        try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(bgConfig, false, true)) {
+            Std140Builder b = Std140Builder.intoBuffer(map.data());
+            b.putFloat(config.shadowExpand);
+            b.putFloat(config.shadowFactor);
+            b.putVec2(config.shadowOffsetX * scale, config.shadowOffsetY * scale);
         }
     }
 
@@ -138,124 +153,90 @@ public final class LiquidGlassUniforms {
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    LiquidGlassGuiElementRenderState widget = widgets.get(i);
-                    float w = widget.x2() - widget.x1();
-                    float h = widget.y2() - widget.y1();
-                    float pixelX = widget.x1() * scale;
-                    float pixelYTop = widget.y1() * scale;
-                    float pixelW = w * scale;
-                    float pixelH = h * scale;
-                    float centerX = pixelX + 0.5f * pixelW;
-                    float centerYTop = pixelYTop + 0.5f * pixelH;
-                    float centerYFB = (float) fbH - centerYTop;
-                    float rectX = centerX - 0.5f * pixelW;
-                    float rectY = centerYFB - 0.5f * pixelH;
-                    b.putVec4(rectX, rectY, pixelW, pixelH);
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
+                    var w = widgets.get(i);
+                    float W = w.x2() - w.x1();
+                    float H = w.y2() - w.y1();
+                    float px = w.x1() * scale;
+                    float pyTop = w.y1() * scale;
+                    float pW = W * scale;
+                    float pH = H * scale;
+                    float cx = px + 0.5f * pW;
+                    float cyTop = pyTop + 0.5f * pH;
+                    float cyFB = (float) fbH - cyTop;
+                    float rectX = cx - 0.5f * pW;
+                    float rectY = cyFB - 0.5f * pH;
+                    b.putVec4(rectX, rectY, pW, pH);
+                } else b.putVec4(0f, 0f, 0f, 0f);
             }
+
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    LiquidGlassGuiElementRenderState widget = widgets.get(i);
-                    float rad = widget.cornerRadius() * scale;
+                    var w = widgets.get(i);
+                    float rad = w.cornerRadius() * scale;
                     b.putVec4(rad, rad, rad, rad);
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
+                } else b.putVec4(0f, 0f, 0f, 0f);
             }
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    Tint tint = widgets.get(i).style().getTint();
+                    Tint t = widgets.get(i).style().getTint();
                     b.putVec4(
-                            ColorHelper.getRed(tint.color()) / 255f,
-                            ColorHelper.getGreen(tint.color()) / 255f,
-                            ColorHelper.getBlue(tint.color()) / 255f,
-                            tint.alpha()
+                            ColorHelper.getRed(t.color()) / 255f,
+                            ColorHelper.getGreen(t.color()) / 255f,
+                            ColorHelper.getBlue(t.color()) / 255f,
+                            t.alpha()
                     );
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
+                } else b.putVec4(0f, 0f, 0f, 0f);
             }
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    Refraction refraction = widgets.get(i).style().getRefraction();
-                    b.putVec4(refraction.dimension(), refraction.magnitude(), refraction.minDimension(), refraction.minMagnitude());
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
+                    Optics o = widgets.get(i).style().getOptics();
+                    b.putVec4(o.refThickness(), o.refFactor(), o.refDispersion(), o.refFresnelRange());
+                } else b.putVec4(0f, 0f, 0f, 0f);
+            }
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Optics o = widgets.get(i).style().getOptics();
+                    b.putVec4(o.refFresnelHardness(), o.refFresnelFactor(), o.glareRange(), o.glareHardness());
+                } else b.putVec4(0f, 0f, 0f, 0f);
+            }
+            for (int i = 0; i < MAX_WIDGETS; i++) {
+                if (i < widgets.size()) {
+                    Optics o = widgets.get(i).style().getOptics();
+                    b.putVec4(o.glareConvergence(), o.glareOppositeFactor(), o.glareFactor(), o.glareAngleRad());
+                } else b.putVec4(0f, 0f, 0f, 0f);
             }
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    Refraction refraction = widgets.get(i).style().getRefraction();
-                    float chromaticAberration = widgets.get(i).style().getRefraction().chromaticAberration();
-                    b.putVec4(chromaticAberration, refraction.ior().x, refraction.ior().y, refraction.ior().z);
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
+                    Smoothing s = widgets.get(i).style().getSmoothing();
+                    b.putVec4(s.factor(), 0f, 0f, 0f);
+                } else b.putVec4(0f, 0f, 0f, 0f);
             }
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
                 if (i < widgets.size()) {
-                    Edge edge = widgets.get(i).style().getEdge();
-                    Reflection reflection = widgets.get(i).style().getReflection();
-                    b.putVec4(edge.dimension(), reflection.offsetMin(), reflection.offsetMagnitude(), 0);
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
-            }
-
-            for (int i = 0; i < MAX_WIDGETS; i++) {
-                if (i < widgets.size()) {
-                    Edge edge = widgets.get(i).style().getEdge();
-                    Reflection reflection = widgets.get(i).style().getReflection();
-                    b.putVec4(edge.minDimension(), reflection.minOffsetMin(), reflection.minOffsetMagnitude(), 0);
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
-            }
-
-            for (int i = 0; i < MAX_WIDGETS; i++) {
-                if (i < widgets.size()) {
-                    Smoothing smoothing = widgets.get(i).style().getSmoothing();
-                    b.putVec4(smoothing.factor(), 0, 0, 0);
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
-            }
-
-            for (int i = 0; i < MAX_WIDGETS; i++) {
-                if (i < widgets.size()) {
-                    LiquidGlassGuiElementRenderState widget = widgets.get(i);
-                    ScreenRect scissor = widget.scissorArea();
-                    if (scissor != null) {
-                        float sLeft = scissor.getLeft() * scale;
-                        float sRight = scissor.getRight() * scale;
-                        float sTop = scissor.getTop() * scale;
-                        float sBottom = scissor.getBottom() * scale;
-                        b.putVec4(sLeft, fbH - sBottom, sRight, fbH - sTop);
+                    var w = widgets.get(i);
+                    ScreenRect sc = w.scissorArea();
+                    if (sc != null) {
+                        float sL = sc.getLeft() * scale;
+                        float sR = sc.getRight() * scale;
+                        float sT = sc.getTop() * scale;
+                        float sB = sc.getBottom() * scale;
+                        b.putVec4(sL, fbH - sB, sR, fbH - sT);
                     } else {
                         b.putVec4(0f, 0f, (float) mc.getFramebuffer().textureWidth, (float) mc.getFramebuffer().textureHeight);
                     }
-                } else {
-                    b.putVec4(0f, 0f, 0f, 0f);
-                }
+                } else b.putVec4(0f, 0f, 0f, 0f);
             }
         }
     }
 
-    public int getCount() {
-        return widgets.size();
-    }
-
-    public List<LiquidGlassGuiElementRenderState> getWidgets() {
-        return widgets;
-    }
+    public int getCount() { return widgets.size(); }
 
     public GpuBuffer getSamplerInfoBuffer() { return samplerInfo; }
     public GpuBuffer getCustomUniformsBuffer() { return customUniforms; }
     public GpuBuffer getWidgetInfoBuffer() { return widgetInfo; }
+    public GpuBuffer getBgConfigBuffer() { return bgConfig; }
 }
