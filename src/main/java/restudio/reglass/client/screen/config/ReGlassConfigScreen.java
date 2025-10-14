@@ -48,6 +48,18 @@ public class ReGlassConfigScreen extends Screen {
 
         sliders.add(addDrawableChild(MappedSlider.intSlider(left, top, w, h, Text.literal("Debug Step"), 0, 9, Math.round(cfg.debugStep), v -> cfg.debugStep = v.floatValue()))); top += gap;
 
+        addDrawableChild(ButtonWidget.builder(
+            Text.literal("Pixelated Grid: " + (cfg.features.pixelatedGrid ? "ON" : "OFF")),
+            button -> {
+                cfg.features.pixelatedGrid = !cfg.features.pixelatedGrid;
+                button.setMessage(Text.literal("Pixelated Grid: " + (cfg.features.pixelatedGrid ? "ON" : "OFF")));
+            }
+        ).dimensions(left, top, w, h).build());
+        top += gap;
+
+        sliders.add(addDrawableChild(MappedSlider.floatSlider(left, top, w, h, Text.literal("Grid Size"), 1f, 32f, cfg.pixelatedGridSize, v -> cfg.pixelatedGridSize = v.floatValue())));
+        top += gap;
+
         int rightCol = this.width - left - w;
         addDrawableChild(ButtonWidget.builder(Text.literal("Save"), b -> ReGlassSettingsIO.saveFromMemory()).dimensions(rightCol, 16, 80, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Close"), b -> { ReGlassSettingsIO.saveFromMemory(); MinecraftClient.getInstance().setScreen(parent); }).dimensions(rightCol + 90, 16, 80, 20).build());

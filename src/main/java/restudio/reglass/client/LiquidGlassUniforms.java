@@ -55,6 +55,8 @@ public final class LiquidGlassUniforms {
         calc.putVec4();
         calc.putFloat();
         calc.putFloat();
+        calc.putFloat();
+        calc.putFloat();
         int customUniformsSize = calc.get();
         customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, customUniformsSize);
 
@@ -114,6 +116,8 @@ public final class LiquidGlassUniforms {
             b.putVec4(ColorHelper.getRed(rc) / 255f, ColorHelper.getGreen(rc) / 255f, ColorHelper.getBlue(rc) / 255f, config.rimLight.intensity());
             b.putFloat(config.pixelEpsilon);
             b.putFloat(ReGlassAnim.INSTANCE.debugStep());
+            b.putFloat(config.features.pixelatedGrid ? 1.0f : 0.0f);
+            b.putFloat(ReGlassAnim.INSTANCE.pixelatedGridSize());
         }
 
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(bgConfig, false, true)) {

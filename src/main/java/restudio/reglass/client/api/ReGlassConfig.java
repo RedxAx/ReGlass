@@ -43,6 +43,7 @@ public class ReGlassConfig {
     public float pixelEpsilon = 2.0f;
 
     public float debugStep = 9.0f;
+    public float pixelatedGridSize = 8.0f;
 
     private ReGlassConfig() {}
 
@@ -52,6 +53,7 @@ public class ReGlassConfig {
         public boolean sliders = true;
         public boolean hotbar = true;
         public boolean cancelScreenDarkening = true;
+        public boolean pixelatedGrid = false;
 
         public final Set<String> classWhitelist = new HashSet<>();
         public final Set<String> classBlacklist = new HashSet<>();

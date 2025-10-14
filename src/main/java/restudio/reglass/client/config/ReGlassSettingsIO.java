@@ -51,6 +51,7 @@ public final class ReGlassSettingsIO {
         d.features_sliders = c.features.sliders;
         d.features_hotbar = c.features.hotbar;
         d.features_cancelScreenDarkening = c.features.cancelScreenDarkening;
+        d.features_pixelatedGrid = c.features.pixelatedGrid;
 
         d.tintColor = c.defaultTintColor;
         d.tintAlpha = c.defaultTintAlpha;
@@ -78,6 +79,8 @@ public final class ReGlassSettingsIO {
         d.glareFactor = c.defaultGlareFactor;
         d.glareAngleRad = c.defaultGlareAngleRad;
 
+        d.pixelatedGridSize = c.pixelatedGridSize;
+
         return d;
     }
 
@@ -89,6 +92,7 @@ public final class ReGlassSettingsIO {
         c.features.sliders = d.features_sliders;
         c.features.hotbar = d.features_hotbar;
         c.features.cancelScreenDarkening = d.features_cancelScreenDarkening;
+        c.features.pixelatedGrid = d.features_pixelatedGrid;
 
         c.defaultTintColor = d.tintColor;
         c.defaultTintAlpha = d.tintAlpha;
@@ -115,6 +119,8 @@ public final class ReGlassSettingsIO {
         c.defaultGlareOppositeFactor = d.glareOppositeFactor;
         c.defaultGlareFactor = d.glareFactor;
         c.defaultGlareAngleRad = d.glareAngleRad;
+
+        c.pixelatedGridSize = d.pixelatedGridSize;
     }
 
     public static class Data {
@@ -123,6 +129,7 @@ public final class ReGlassSettingsIO {
         public boolean features_sliders = true;
         public boolean features_hotbar = true;
         public boolean features_cancelScreenDarkening = true;
+        public boolean features_pixelatedGrid = false;
 
         public int tintColor = 0x000000;
         public float tintAlpha = 0f;
@@ -149,5 +156,7 @@ public final class ReGlassSettingsIO {
         public float glareOppositeFactor = 80.0f;
         public float glareFactor = 90.0f;
         public float glareAngleRad = (float) (-45.0 * Math.PI / 180.0);
+
+        public float pixelatedGridSize = 8.0f;
     }
 }

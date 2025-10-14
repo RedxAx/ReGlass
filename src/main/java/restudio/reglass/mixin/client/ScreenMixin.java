@@ -52,8 +52,7 @@ public class ScreenMixin {
             cancellable = true
     )
     private void reglass$onRenderDarkening(DrawContext context, CallbackInfo ci) {
-        if (ReGlassConfig.INSTANCE.features.enableRedesign
-                && ReGlassConfig.INSTANCE.features.cancelScreenDarkening) {
+        if (ReGlassConfig.INSTANCE.features.enableRedesign && ReGlassConfig.INSTANCE.features.cancelScreenDarkening) {
             ci.cancel();
         }
     }

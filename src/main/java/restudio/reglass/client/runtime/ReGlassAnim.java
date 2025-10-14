@@ -30,6 +30,7 @@ public final class ReGlassAnim {
     private float glareAngleRad;
 
     private float debugStep;
+    private float pixelatedGridSize;
 
     private ReGlassAnim() {}
 
@@ -57,6 +58,7 @@ public final class ReGlassAnim {
             glareFactor = cfg.defaultGlareFactor;
             glareAngleRad = cfg.defaultGlareAngleRad;
             debugStep = cfg.debugStep;
+            pixelatedGridSize = cfg.pixelatedGridSize;
             init = true;
             return;
         }
@@ -80,6 +82,7 @@ public final class ReGlassAnim {
         glareFactor = lerp(glareFactor, cfg.defaultGlareFactor, a);
         glareAngleRad = lerp(glareAngleRad, cfg.defaultGlareAngleRad, a);
         debugStep = lerp(debugStep, cfg.debugStep, a);
+        pixelatedGridSize = lerp(pixelatedGridSize, cfg.pixelatedGridSize, a);
     }
 
     private static float alpha(double dt, float tau) {
@@ -116,4 +119,5 @@ public final class ReGlassAnim {
     public float glareAngleRad() { return glareAngleRad; }
 
     public float debugStep() { return debugStep; }
+    public float pixelatedGridSize() { return pixelatedGridSize; }
 }

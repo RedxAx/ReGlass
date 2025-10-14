@@ -14,6 +14,8 @@ layout(std140) uniform CustomUniforms {
     vec4 RIM_LIGHT_COLOR;
     float EPS_PIX;
     float DebugStep;
+    float Pixelated;
+    float PixelGridSize;
 };
 #define MAX_WIDGETS 64
 layout(std140) uniform WidgetInfo {
@@ -77,12 +79,11 @@ vec4 sampleBlur(int idx, vec2 uv) {
     return texture(Sampler5, uv);
 }
 
-SDFResult fieldWidgets(vec2 p, vec2 inSize) {
+SDFResult fieldWidgets(vec2 p, vec2 inSize, vec2 fragCoord) {
     int n = int(Count + 0.5);
     if (n == 0) return SDFResult(1e6, vec2(0.0), 1.0, -1);
     SDFResult pos = SDFResult(1e6, vec2(0.0), 1.0, -1);
     bool hasPos = false;
-    vec2 fragCoord = gl_FragCoord.xy;
 
     for (int i = 0; i < MAX_WIDGETS; i++) {
         if (i >= n) break;
@@ -136,19 +137,20 @@ vec3 vec2ToRgb(vec2 v) { float hue = vec2ToAngle(normalize(v)) / (2.0 * PI); ret
 
 void main() {
     vec2 inSize = InSize; if (inSize.x <= 0.0 || inSize.y <= 0.0) inSize = vec2(textureSize(Sampler0, 0));
-    vec2 UV = gl_FragCoord.xy / inSize;
-    vec3 base = texture(Sampler0, UV).rgb;
+    vec2 original_coord = gl_FragCoord.xy;
+    vec2 original_UV = original_coord / inSize;
+    vec3 base = texture(Sampler0, original_UV).rgb;
 
     vec3 baseShadowed = base;
     int n = int(Count + 0.5);
     for (int i = 0; i < MAX_WIDGETS; i++) {
         if (i >= n) break;
         vec4 sc = ScissorRects[i];
-        if (gl_FragCoord.x < sc.x || gl_FragCoord.y < sc.y || gl_FragCoord.x > sc.z || gl_FragCoord.y > sc.w) continue;
+        if (original_coord.x < sc.x || original_coord.y < sc.y || original_coord.x > sc.z || original_coord.y > sc.w) continue;
         vec4 rc = Rects[i];
         vec4 rr = Rads[i];
         vec2 cPx = vec2(rc.x + 0.5 * rc.z, rc.y + 0.5 * rc.w);
-        vec2 pShadow = screenToUV(gl_FragCoord.xy + Shadow0[i].zw, inSize);
+        vec2 pShadow = screenToUV(original_coord + Shadow0[i].zw, inSize);
         vec2 c = screenToUV(cPx, inSize);
         vec2 b = 0.5 * vec2(rc.z, rc.w) / inSize.y;
         vec4 rad = rr / inSize.y;
@@ -161,8 +163,8 @@ void main() {
         baseShadowed = mix(baseShadowed, scol, sa);
     }
 
-    vec2 p = screenToUV(gl_FragCoord.xy, inSize);
-    SDFResult f = fieldWidgets(p, inSize);
+    vec2 p = screenToUV(original_coord, inSize);
+    SDFResult f = fieldWidgets(p, inSize, original_coord);
     float merged = f.dist;
 
     int STEP = int(DebugStep + 0.5);
@@ -182,6 +184,12 @@ void main() {
         fragColor = vec4(col, 1.0); return;
     }
     if (merged >= 0.0) { fragColor = vec4(baseShadowed, 1.0); return; }
+
+    vec2 coord_pixelated = original_coord;
+    if (Pixelated > 0.5) {
+        coord_pixelated = floor(original_coord / PixelGridSize) * PixelGridSize + 0.5 * PixelGridSize;
+    }
+    vec2 UV_pixelated = coord_pixelated / inSize;
 
     int idx = f.index;
     vec4 o0 = Optics0[idx];
@@ -216,19 +224,19 @@ void main() {
     int blurIndex = int(Extra0[idx].x + 0.5);
     vec2 refrOffset = -normal * edgeFactor * 0.08 * vec2(inSize.y / inSize.x, 1.0);
 
-    if (STEP <= 5) { vec4 outColor = sampleBlur(blurIndex, UV); fragColor = outColor; return; }
-    if (STEP <= 6) { vec4 outColor = sampleBlur(blurIndex, UV + refrOffset); fragColor = outColor; return; }
+    if (STEP <= 5) { vec4 outColor = sampleBlur(blurIndex, UV_pixelated); fragColor = outColor; return; }
+    if (STEP <= 6) { vec4 outColor = sampleBlur(blurIndex, UV_pixelated + refrOffset); fragColor = outColor; return; }
 
     float fresnelFactor = clamp(pow(1.0 + merged * inSize.y / 1500.0 * pow(500.0 / max(refFresRange, 1e-6), 2.0) + refFresHard, 5.0), 0.0, 1.0);
 
     if (STEP <= 7) {
-        vec4 blurredPixel = sampleBlur(blurIndex, UV + refrOffset);
+        vec4 blurredPixel = sampleBlur(blurIndex, UV_pixelated + refrOffset);
         vec4 outColor = mix(blurredPixel, vec4(1.0), (fresnelFactor * refFresFac * 0.7) * nlen);
         fragColor = outColor; return;
     }
 
     if (STEP <= 8) {
-        vec4 blurredPixel = sampleBlur(blurIndex, UV + refrOffset);
+        vec4 blurredPixel = sampleBlur(blurIndex, UV_pixelated + refrOffset);
         float glareGeo = clamp(pow(1.0 + merged * inSize.y / 1500.0 * pow(500.0 / max(glareRange, 1e-6), 2.0) + glareHard, 5.0), 0.0, 1.0);
         float ang = (atan(normal.y, normal.x) - PI * 0.25 + glareAngle) * 2.0;
         int farSide = 0; if ((ang > PI * (2.0 - 0.5) && ang < PI * (4.0 - 0.5)) || (ang < PI * (0.0 - 0.5))) farSide = 1;
@@ -238,12 +246,12 @@ void main() {
         fragColor = outColor; return;
     }
 
-    vec4 blurredPixel = sampleBlur(blurIndex, UV + refrOffset);
+    vec4 blurredPixel = sampleBlur(blurIndex, UV_pixelated + refrOffset);
     vec4 dispPixel;
     { const float NR = 0.98, NG = 1.00, NB = 1.02;
-        dispPixel.r = sampleBlur(blurIndex, UV + refrOffset * (1.0 - (NR - 1.0) * refDisp)).r;
-        dispPixel.g = sampleBlur(blurIndex, UV + refrOffset * (1.0 - (NG - 1.0) * refDisp)).g;
-        dispPixel.b = sampleBlur(blurIndex, UV + refrOffset * (1.0 - (NB - 1.0) * refDisp)).b;
+        dispPixel.r = sampleBlur(blurIndex, UV_pixelated + refrOffset * (1.0 - (NR - 1.0) * refDisp)).r;
+        dispPixel.g = sampleBlur(blurIndex, UV_pixelated + refrOffset * (1.0 - (NG - 1.0) * refDisp)).g;
+        dispPixel.b = sampleBlur(blurIndex, UV_pixelated + refrOffset * (1.0 - (NB - 1.0) * refDisp)).b;
         dispPixel.a = 1.0; }
 
     vec4 outColor = mix(dispPixel, vec4(tint.rgb, 1.0), tint.a * 0.8);
