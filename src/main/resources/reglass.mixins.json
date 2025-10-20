@@ -22,6 +22,7 @@
     "client.GuiRendererMixin",
     "client.InGameHudMixin",
     "client.ScreenMixin",
+    "client.TitleScreenMixin",
     "logical.GameRendererMixin",
     "widgets.DrawContextMixin"
   ]
