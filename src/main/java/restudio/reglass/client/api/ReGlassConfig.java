@@ -15,10 +15,10 @@ public class ReGlassConfig {
 
     public float defaultSmoothing = 0.003f;
 
-    public int defaultBlurRadius = 3;
+    public int defaultBlurRadius = 12;
 
-    public float defaultShadowExpand = 25.0f;
-    public float defaultShadowFactor = 0.15f;
+    public float defaultShadowExpand = 30.0f;
+    public float defaultShadowFactor = 0.25f;
     public float defaultShadowOffsetX = 0.0f;
     public float defaultShadowOffsetY = 2.0f;
     public int defaultShadowColor = 0x000000;

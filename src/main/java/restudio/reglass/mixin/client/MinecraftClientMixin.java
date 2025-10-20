@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import restudio.reglass.client.Config;
+import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.screen.world.CustomWorldSelectScreen;
 
 @Mixin(MinecraftClient.class)
@@ -24,7 +24,7 @@ public abstract class MinecraftClientMixin {
 
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
-        if (Config.redesginMinecraft && false) { //Commited by mistake last time, heavy WIP.
+        if (ReGlassConfig.INSTANCE.features.enableRedesign && false) { //Commited by mistake last time, heavy WIP.
             if (screen instanceof SelectWorldScreen) {
                 setScreen(new CustomWorldSelectScreen(currentScreen));
                 ci.cancel();

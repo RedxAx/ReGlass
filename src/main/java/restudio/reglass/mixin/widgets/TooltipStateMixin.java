@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import restudio.reglass.client.Config;
+import restudio.reglass.client.api.ReGlassConfig;
 
 @Mixin(TooltipState.class)
 public class TooltipStateMixin {
@@ -19,7 +19,7 @@ public class TooltipStateMixin {
 
 //    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
 //    private void onRender(DrawContext context, int mouseX, int mouseY, boolean hovered, boolean focused, ScreenRect navigationFocus, CallbackInfo ci) {
-//        if (!Config.redesginMinecraft) return;
+//        if (!ReGlassConfig.INSTANCE.features.enableRedesign) return;
 //
 //        ci.cancel();
 //    }
