@@ -23,6 +23,6 @@
     "client.InGameHudMixin",
     "client.ScreenMixin",
     "logical.GameRendererMixin",
-    "widgets.ButtonMixin"
+    "widgets.DrawContextMixin"
   ]
 }
