@@ -97,7 +97,7 @@ public abstract class InGameHudMixin {
 
         this.reglass$slotBlobX += (targetCircleX - this.reglass$slotBlobX) * alpha;
 
-        int circleX = (int) Math.round(this.reglass$slotBlobX);
+        int circleX = (int) Math.round(this.reglass$slotBlobX) + 1;
 
         WidgetStyle selectorStyle = new WidgetStyle().smoothing(-0.005f);
 
