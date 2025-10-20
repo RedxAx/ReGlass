@@ -84,7 +84,7 @@ public final class ReGlassSettingsIO {
         return d;
     }
 
-    private static void apply(Data d) {
+    public static void apply(Data d) {
         ReGlassConfig c = ReGlassConfig.INSTANCE;
 
         c.features.enableRedesign = d.features_enableRedesign;

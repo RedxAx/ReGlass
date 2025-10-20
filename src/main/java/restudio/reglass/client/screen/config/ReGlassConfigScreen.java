@@ -143,7 +143,14 @@ public class ReGlassConfigScreen extends Screen {
 
         this.totalListHeight = y;
 
-        addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), b -> close()).dimensions(this.width / 2 - 100, this.height - 28, 200, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.translatable("controls.reset"), b -> {
+            ReGlassSettingsIO.apply(new ReGlassSettingsIO.Data());
+            if (this.client != null) {
+                this.client.setScreen(new ReGlassConfigScreen(this.parent));
+            }
+        }).dimensions(this.width / 2 - 100, this.height - 28, 98, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(Text.translatable("gui.done"), b -> close()).dimensions(this.width / 2 + 2, this.height - 28, 98, 20).build());
 
         int previewX = this.width / 2 + 20;
         int previewY = this.height / 2 - 50;
