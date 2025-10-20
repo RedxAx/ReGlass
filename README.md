@@ -1,7 +1,8 @@
 # ReGlass By ReStudio
 ### Liquid Glass Implemented On Your Favorite Pixelated And Cubic Game
 
-https://github.com/user-attachments/assets/59a78fcf-5223-416b-abdb-f2778f62ef0e
+<img width="669" height="422" alt="Screenshot 2025-10-20 113022" src="https://github.com/user-attachments/assets/d5c99347-c8cd-4c21-a430-54a0499c5f0f" />
+
 
 ReGlass Is Meant To Be An API For Any Minecraft Mod.
 
@@ -40,3 +41,5 @@ addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50,
 
 ## Contributing Is More Than Welcome!
 Especially In The Minecraft UI Redesign Part, This Part Is Highly WIP And Needs a Lot of Work.
+
+<img width="426" height="251" alt="Sun Set" src="https://github.com/user-attachments/assets/8231c19b-abea-42b2-807f-35c3f089d3c0" />
