@@ -3,6 +3,7 @@ package restudio.reglass.client.screen.widget.world;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -117,8 +118,8 @@ public class WorldListEntryWidget extends ScrollableListWidget.Entry<WorldListEn
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (isMouseOver(mouseX, mouseY)) {
+    public boolean mouseClicked(Click click) {
+        if (isMouseOver(click.x(), click.y())) {
             parent.getList().setSelected(this);
             return true;
         }

@@ -3,6 +3,7 @@ package restudio.reglass.mixin.client;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,9 +38,9 @@ public class ScreenMixin {
             cancellable = true
     )
     private void onKeyPressed(
-            int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir
+            KeyInput input, CallbackInfoReturnable<Boolean> cir
     ) {
-        if (keyCode == GLFW.GLFW_KEY_V) {
+        if (input.key() == GLFW.GLFW_KEY_V) {
             Config.redesginMinecraft = !Config.redesginMinecraft;
             ReGlassConfig.INSTANCE.features.enableRedesign = Config.redesginMinecraft;
             cir.setReturnValue(true);

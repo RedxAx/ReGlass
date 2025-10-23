@@ -17,9 +17,13 @@ import java.util.List;
 import java.util.OptionalInt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.UniformType;
+import net.minecraft.client.gui.render.GuiRenderer;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.Identifier;
 import restudio.reglass.client.api.ReGlassConfig;
+import restudio.reglass.client.gui.QuadVertexBufferProvider;
+import restudio.reglass.mixin.accessor.GameRendererAccessor;
 
 public final class LiquidGlassPrecomputeRuntime {
 
@@ -156,7 +160,9 @@ public final class LiquidGlassPrecomputeRuntime {
         }
 
         var ce = RenderSystem.getDevice().createCommandEncoder();
-        var quadVB = RenderSystem.getQuadVertexBuffer();
+        GameRenderer gameRenderer = mc.gameRenderer;
+        GuiRenderer guiRenderer = ((GameRendererAccessor) gameRenderer).getGuiRenderer();
+        var quadVB = ((QuadVertexBufferProvider) guiRenderer).getQuadVertexBuffer();
         var idxInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
         var ib = idxInfo.getIndexBuffer(6);
         var it = idxInfo.getIndexType();

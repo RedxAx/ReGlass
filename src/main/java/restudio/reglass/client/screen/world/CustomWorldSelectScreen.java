@@ -54,7 +54,7 @@ public class CustomWorldSelectScreen extends Screen {
         int buttonWidth = 120;
 
         this.playButton = ButtonWidget.builder(Text.translatable("selectWorld.select"), button -> play(getSelectedSummaries())).dimensions(listWidth, 50, buttonWidth, 20).build();
-        this.createButton = ButtonWidget.builder(Text.translatable("selectWorld.create"), button -> CreateWorldScreen.show(this.client, this)).dimensions(listWidth, 80, buttonWidth, 20).build();
+        this.createButton = ButtonWidget.builder(Text.translatable("selectWorld.create"), button -> CreateWorldScreen.show(this.client, null)).dimensions(listWidth, 80, buttonWidth, 20).build();
         this.editButton = ButtonWidget.builder(Text.translatable("selectWorld.edit"), button -> {
             Set<LevelSummary> summaries = getSelectedSummaries();
             if (summaries.size() == 1) {

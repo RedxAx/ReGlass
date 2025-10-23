@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -11,6 +12,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import restudio.reglass.client.api.WidgetStyle;
 import restudio.reglass.client.config.ReGlassSettingsIO;
@@ -19,6 +21,7 @@ import restudio.reglass.client.screen.config.ReGlassConfigScreen;
 public class ReGlassClient implements ClientModInitializer {
     private static KeyBinding playgroundKey;
     private static KeyBinding configKey;
+    public static KeyBinding.Category reGlassCategory = new KeyBinding.Category(Identifier.of("reglass", "category"));
 
     public static MinecraftClient minecraftClient;
 
@@ -26,8 +29,8 @@ public class ReGlassClient implements ClientModInitializer {
     public void onInitializeClient() {
         minecraftClient = MinecraftClient.getInstance();
 
-        playgroundKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("ReGlass Playground", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "Liquid Glass"));
-        configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("ReGlass Config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, "Liquid Glass"));
+        playgroundKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("ReGlass Playground", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, reGlassCategory));
+        configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("ReGlass Config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_G, reGlassCategory));
 
         ReGlassSettingsIO.loadIntoMemory();
 
@@ -70,12 +73,12 @@ public class ReGlassClient implements ClientModInitializer {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (button == 1) {
-                addDrawableChild(new LiquidGlassWidget((int) mouseX - 50, (int) mouseY - 50, 100, 100, WidgetStyle.create().smoothing(.05f))).setMoveable(true);
+        public boolean mouseClicked(Click click, boolean isDouble) {
+            if (click.button() == 1) {
+                addDrawableChild(new LiquidGlassWidget((int) click.x() - 50, (int) click.y() - 50, 100, 100, WidgetStyle.create().smoothing(.05f))).setMoveable(true);
                 return true;
             }
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(click, isDouble);
         }
     }
 }

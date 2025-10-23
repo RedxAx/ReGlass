@@ -16,6 +16,7 @@
   },
   "client": [
     "accessor.DrawContextAccessor",
+    "accessor.GameRendererAccessor",
     "accessor.GuiRenderStateAccessor",
     "accessor.SliderWidgetAccessor",
     "accessor.TextIconButtonWidgetAccessor",
@@ -24,6 +25,7 @@
     "client.ScreenMixin",
     "client.TitleScreenMixin",
     "logical.GameRendererMixin",
-    "widgets.DrawContextMixin"
+    "widgets.DrawContextMixin",
+    "widgets.GuiRendererMixin"
   ]
 }

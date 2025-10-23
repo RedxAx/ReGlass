@@ -10,6 +10,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
+import net.minecraft.client.gui.render.GuiRenderer;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import org.spongepowered.asm.mixin.Final;
@@ -22,7 +23,9 @@ import restudio.reglass.client.LiquidGlassPipelines;
 import restudio.reglass.client.LiquidGlassPrecomputeRuntime;
 import restudio.reglass.client.LiquidGlassUniforms;
 import restudio.reglass.client.api.ReGlassConfig;
+import restudio.reglass.client.gui.QuadVertexBufferProvider;
 import restudio.reglass.client.runtime.ReGlassAnim;
+import restudio.reglass.mixin.accessor.GameRendererAccessor;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
@@ -69,7 +72,8 @@ public abstract class GameRendererMixin {
                 pass.setUniform("BgConfig", uniforms.getBgConfigBuffer());
                 pass.bindSampler("Sampler0", mainFb.getColorAttachmentView());
 
-                GpuBuffer quadVB = RenderSystem.getQuadVertexBuffer();
+                GuiRenderer guiRenderer = ((GameRendererAccessor) (Object) this).getGuiRenderer();
+                GpuBuffer quadVB = ((QuadVertexBufferProvider) guiRenderer).getQuadVertexBuffer();
                 RenderSystem.ShapeIndexBuffer quadIBInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
                 com.mojang.blaze3d.buffers.GpuBuffer quadIB = quadIBInfo.getIndexBuffer(6);
                 pass.setVertexBuffer(0, quadVB);

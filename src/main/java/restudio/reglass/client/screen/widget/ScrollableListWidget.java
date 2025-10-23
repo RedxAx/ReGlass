@@ -2,9 +2,12 @@ package restudio.reglass.client.screen.widget;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 
@@ -50,7 +53,7 @@ public class ScrollableListWidget<E extends ScrollableListWidget.Entry<E>> exten
     }
 
     public void setSelected(E entry) {
-        if (!Screen.hasControlDown()) {
+        if (!InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), InputUtil.GLFW_KEY_LEFT_CONTROL)) {
             this.selectedEntries.clear();
         }
 
@@ -79,14 +82,14 @@ public class ScrollableListWidget<E extends ScrollableListWidget.Entry<E>> exten
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (isMouseOver(mouseX, mouseY)) {
+    public boolean mouseClicked(Click button, boolean isDouble) {
+        if (isMouseOver(button.y(), button.y())) {
             int top = getY() - (int) this.scrollAmount + verticalPadding;
             for (int i = 0; i < this.entries.size(); i++) {
                 E entry = this.entries.get(i);
                 int entryY = top + i * (this.itemHeight + verticalPadding);
-                if (mouseY >= entryY && mouseY < entryY + this.itemHeight) {
-                    if (entry.mouseClicked(mouseX, mouseY, button)) {
+                if (button.y() >= entryY && button.y() < entryY + this.itemHeight) {
+                    if (entry.mouseClicked(button)) {
                         return true;
                     }
                 }
@@ -94,6 +97,8 @@ public class ScrollableListWidget<E extends ScrollableListWidget.Entry<E>> exten
         }
         return false;
     }
+
+
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
@@ -138,7 +143,7 @@ public class ScrollableListWidget<E extends ScrollableListWidget.Entry<E>> exten
             this.height = height;
         }
 
-        public abstract boolean mouseClicked(double mouseX, double mouseY, int button);
+        public abstract boolean mouseClicked(Click button);
 
         public boolean isMouseOver(double mouseX, double mouseY) {
             return mouseX >= this.x && mouseX < this.x + this.width &&
