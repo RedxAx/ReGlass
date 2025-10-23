@@ -6,6 +6,7 @@ import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Arm;
 import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.GameMode;
 import org.spongepowered.asm.mixin.Final;
@@ -67,10 +68,10 @@ public abstract class InGameHudMixin {
         int hotbarWidth = 182;
         int hotbarHeight = 22;
         int x = context.getScaledWindowWidth() / 2 - hotbarWidth / 2;
-        int y = context.getScaledWindowHeight() - hotbarHeight;
+        int offhandY = context.getScaledWindowHeight() - hotbarHeight;
 
         ReGlassApi.create(context)
-                .dimensions(x, y, hotbarWidth, hotbarHeight)
+                .dimensions(x, offhandY, hotbarWidth, hotbarHeight)
                 .cornerRadius(11)
                 .style(new WidgetStyle().tint(0x000000, 0.3f))
                 .render();
@@ -102,14 +103,14 @@ public abstract class InGameHudMixin {
         WidgetStyle selectorStyle = new WidgetStyle().smoothing(-0.005f);
 
         ReGlassApi.create(context)
-                .dimensions(circleX, y, hotbarHeight, hotbarHeight)
+                .dimensions(circleX, offhandY, hotbarHeight, hotbarHeight)
                 .cornerRadius(0.5f * hotbarHeight)
                 .style(selectorStyle)
                 .render();
 
         for (int i = 0; i < 9; ++i) {
             int itemX = x + 3 + i * 20;
-            int itemY = y + 3;
+            int itemY = offhandY + 3;
             this.renderHotbarItem(
                     context,
                     itemX,
@@ -119,6 +120,20 @@ public abstract class InGameHudMixin {
                     player.getInventory().getStack(i),
                     i + 1
             );
+        }
+
+        ItemStack offHandStack = player.getOffHandStack();
+        if (!offHandStack.isEmpty()) {
+            Arm arm = player.getMainArm().getOpposite();
+            int offhandX = (arm == Arm.LEFT ? x - hotbarHeight - 4 : x + hotbarWidth + 4);
+
+            ReGlassApi.create(context)
+                    .dimensions(offhandX, offhandY, hotbarHeight, hotbarHeight)
+                    .cornerRadius(hotbarHeight * 0.5f)
+                    .style(new WidgetStyle().tint(0x000000, 0.3f))
+                    .render();
+
+            this.renderHotbarItem(context, offhandX + 3, offhandY + 3, tickCounter, player, offHandStack, 0);
         }
 
         LiquidGlassUniforms.get().tryApplyBlur(context);
