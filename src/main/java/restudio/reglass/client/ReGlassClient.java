@@ -46,7 +46,6 @@ public class ReGlassClient implements ClientModInitializer {
 
     public static class PlaygroundScreen extends Screen {
         private boolean blur;
-        private WidgetStyle customStyle;
 
         public PlaygroundScreen() {
             super(Text.literal("ReGlass Playground"));
@@ -56,7 +55,7 @@ public class ReGlassClient implements ClientModInitializer {
         protected void init() {
             super.init();
 
-            customStyle = WidgetStyle.create().tint(Formatting.GOLD.getColorValue(), 0.4f).blurRadius(0).shadow(25f, 0.2f, 0f, 3f).smoothing(.05f).shadowColor(0x000000, 1.0f);
+            WidgetStyle customStyle = WidgetStyle.create().tint(Formatting.GOLD.getColorValue(), 0.4f).blurRadius(0).shadow(25f, 0.2f, 0f, 3f).smoothing(.05f).shadowColor(0x000000, 1.0f);
             addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50, customStyle).setMoveable(true));
             addDrawableChild(ButtonWidget.builder(Text.literal("Toggle BG Blur"), b -> blur = !blur).dimensions(10, 10, 120, 20).build());
         }
