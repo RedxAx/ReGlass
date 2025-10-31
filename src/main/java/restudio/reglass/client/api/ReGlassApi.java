@@ -27,6 +27,8 @@ public final class ReGlassApi {
         private float cornerRadius = -1f;
         @Nullable private Text text = null;
         private WidgetStyle style = new WidgetStyle();
+        private float hoverAmount = 0f;
+        private float focusAmount = 0f;
 
         private Builder(DrawContext context) {
             this.context = context;
@@ -70,11 +72,31 @@ public final class ReGlassApi {
             return this;
         }
 
+        public Builder hover(float amount) {
+            if (Float.isNaN(amount)) amount = 0f;
+            this.hoverAmount = Math.max(0f, Math.min(1f, amount));
+            return this;
+        }
+
+        public Builder focus(float amount) {
+            if (Float.isNaN(amount)) amount = 0f;
+            this.focusAmount = Math.max(0f, Math.min(1f, amount));
+            return this;
+        }
+
+        public Builder selected(float amount) {
+            return this.focus(amount);
+        }
+
         public void render() {
             float finalCornerRadius = this.cornerRadius < 0 ? 0.5f * Math.min(this.width, this.height) : this.cornerRadius;
             Matrix3x2f pose = new Matrix3x2f(context.getMatrices());
             ScreenRect scissorRect = ((DrawContextAccessor) context).getScissorStack().peekLast();
-            context.state.addSpecialElement(new LiquidGlassGuiElementRenderState(this.x, this.y, this.x + this.width, this.y + this.height, finalCornerRadius, this.text, this.style, pose, scissorRect));
+            context.state.addSpecialElement(new LiquidGlassGuiElementRenderState(
+                    this.x, this.y, this.x + this.width, this.y + this.height,
+                    finalCornerRadius, this.text, this.style, pose, scissorRect,
+                    this.hoverAmount, this.focusAmount
+            ));
         }
     }
 }

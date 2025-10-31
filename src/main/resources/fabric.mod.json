@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "id": "reglass",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "name": "ReGlass",
   "description": "Liquid Glass Implemented On Your Favorite Pixelated And Cubic Game.",
   "authors": [
     "RedxAx"
   ],
-  "license": "CC0-1.0",
+  "license": "MIT",
   "environment": "client",
   "entrypoints": {
     "client": [

@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import restudio.reglass.client.api.ReGlassApi;
 import restudio.reglass.client.api.ReGlassConfig;
+import restudio.reglass.client.api.WidgetStyle;
 
 @Mixin(DrawContext.class)
 public abstract class DrawContextMixin {
@@ -29,7 +30,14 @@ public abstract class DrawContextMixin {
                 || sprite.getPath().equals(BUTTON_HIGHLIGHTED_TEXTURE.getPath());
 
         if (isButtonTexture && (ReGlassConfig.INSTANCE.features.enableRedesign && ReGlassConfig.INSTANCE.features.buttons)) {
-            ReGlassApi.create((DrawContext)(Object) this).position(x, y).size(width, height).render();
+            boolean isHighlighted = sprite.getPath().equals(BUTTON_HIGHLIGHTED_TEXTURE.getPath());
+            boolean isDisabled = sprite.getPath().equals(BUTTON_DISABLED_TEXTURE.getPath());
+            ReGlassApi.create((DrawContext)(Object) this)
+                    .position(x, y)
+                    .size(width, height)
+                    .hover(isHighlighted ? 1f : 0f)
+                    .style(WidgetStyle.create().tint(isDisabled ? 0xFF000000 : 0xFFFFFFFF, isDisabled ? 0.4f : 0f))
+                    .render();
             ci.cancel();
         }
     }

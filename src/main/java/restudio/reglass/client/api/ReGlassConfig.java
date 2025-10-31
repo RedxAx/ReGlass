@@ -45,6 +45,12 @@ public class ReGlassConfig {
     public float debugStep = 9.0f;
     public float pixelatedGridSize = 8.0f;
 
+    public float hoverScalePx = 1.5f;
+    public float focusScalePx = 2.5f;
+    public float focusBorderWidthPx = 2.0f;
+    public float focusBorderIntensity = 0.75f;
+    public float focusBorderSpeed = 1.6f;
+
     private ReGlassConfig() {}
 
     public static class Features {
