@@ -37,12 +37,17 @@ public abstract class SliderWidgetMixin extends ClickableWidget {
         ci.cancel();
 
         int knobX = (int) (this.getX() + (((SliderWidgetAccessor) this).getValue() * (this.getWidth() - 4)));
+        boolean hoveredBg = this.isMouseOver(mouseX, mouseY);
+        boolean knobHovered = mouseX >= knobX && mouseX < knobX + 4 && mouseY >= getY() && mouseY < getY() + getHeight();
+        boolean focus = this.isFocused();
 
-        ReGlassApi.create(context).fromWidget(this).render();
+        ReGlassApi.create(context).fromWidget(this).hover(hoveredBg ? 1f : 0f).focus(focus ? 1f : 0f).render();
         ReGlassApi.create(context)
                 .size(4, getHeight())
                 .position(knobX, getY())
                 .style(knobStyle)
+                .hover(knobHovered ? 1f : 0f)
+                .focus(focus ? 1f : 0f)
                 .render();
 
         LiquidGlassUniforms.get().tryApplyBlur(context);

@@ -32,6 +32,12 @@ public final class ReGlassAnim {
     private float debugStep;
     private float pixelatedGridSize;
 
+    private float hoverScalePx;
+    private float focusScalePx;
+    private float focusBorderWidthPx;
+    private float focusBorderIntensity;
+    private float focusBorderSpeed;
+
     private ReGlassAnim() {}
 
     public void update(ReGlassConfig cfg, double dtSeconds) {
@@ -59,6 +65,11 @@ public final class ReGlassAnim {
             glareAngleRad = cfg.defaultGlareAngleRad;
             debugStep = cfg.debugStep;
             pixelatedGridSize = cfg.pixelatedGridSize;
+            hoverScalePx = cfg.hoverScalePx;
+            focusScalePx = cfg.focusScalePx;
+            focusBorderWidthPx = cfg.focusBorderWidthPx;
+            focusBorderIntensity = cfg.focusBorderIntensity;
+            focusBorderSpeed = cfg.focusBorderSpeed;
             init = true;
             return;
         }
@@ -83,6 +94,11 @@ public final class ReGlassAnim {
         glareAngleRad = lerp(glareAngleRad, cfg.defaultGlareAngleRad, a);
         debugStep = lerp(debugStep, cfg.debugStep, a);
         pixelatedGridSize = lerp(pixelatedGridSize, cfg.pixelatedGridSize, a);
+        hoverScalePx = lerp(hoverScalePx, cfg.hoverScalePx, a);
+        focusScalePx = lerp(focusScalePx, cfg.focusScalePx, a);
+        focusBorderWidthPx = lerp(focusBorderWidthPx, cfg.focusBorderWidthPx, a);
+        focusBorderIntensity = lerp(focusBorderIntensity, cfg.focusBorderIntensity, a);
+        focusBorderSpeed = lerp(focusBorderSpeed, cfg.focusBorderSpeed, a);
     }
 
     private static float alpha(double dt, float tau) {
@@ -120,4 +136,10 @@ public final class ReGlassAnim {
 
     public float debugStep() { return debugStep; }
     public float pixelatedGridSize() { return pixelatedGridSize; }
+
+    public float hoverScalePx() { return hoverScalePx; }
+    public float focusScalePx() { return focusScalePx; }
+    public float focusBorderWidthPx() { return focusBorderWidthPx; }
+    public float focusBorderIntensity() { return focusBorderIntensity; }
+    public float focusBorderSpeed() { return focusBorderSpeed; }
 }

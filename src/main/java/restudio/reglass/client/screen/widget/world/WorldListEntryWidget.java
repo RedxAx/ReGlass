@@ -81,9 +81,10 @@ public class WorldListEntryWidget extends ScrollableListWidget.Entry<WorldListEn
     public void render(DrawContext context, int index, int x, int y, int width, int height, int mouseX, int mouseY, boolean hovered, float delta) {
         super.render(context, index, x, y, width, height, mouseX, mouseY, hovered, delta);
 
+        boolean isSelected = this.parent.getList().getSelectedEntries().contains(this);
 
         WidgetStyle style = defaultStyle;
-        if (this.parent.getList().getSelectedEntries().contains(this)) {
+        if (isSelected) {
             style = selectedStyle;
         } else if (hovered) {
             style = hoveredStyle;
@@ -93,6 +94,8 @@ public class WorldListEntryWidget extends ScrollableListWidget.Entry<WorldListEn
                 .dimensions(x, y, width, height)
                 .cornerRadius(8)
                 .style(style)
+                .hover(hovered ? 1f : 0f)
+                .focus(isSelected ? 1f : 0f)
                 .render();
 
         String displayName = summary.getDisplayName();

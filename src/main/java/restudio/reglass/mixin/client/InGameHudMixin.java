@@ -67,8 +67,8 @@ public abstract class InGameHudMixin {
 
         int hotbarWidth = 182;
         int hotbarHeight = 22;
-        int x = context.getScaledWindowWidth() / 2 - hotbarWidth / 2;
-        int offhandY = context.getScaledWindowHeight() - hotbarHeight;
+        int x = this.client.getWindow().getScaledWidth() / 2 - hotbarWidth / 2;
+        int offhandY = this.client.getWindow().getScaledHeight() - hotbarHeight;
 
         ReGlassApi.create(context)
                 .dimensions(x, offhandY, hotbarWidth, hotbarHeight)
@@ -106,6 +106,7 @@ public abstract class InGameHudMixin {
                 .dimensions(circleX, offhandY, hotbarHeight, hotbarHeight)
                 .cornerRadius(0.5f * hotbarHeight)
                 .style(selectorStyle)
+                .focus(1f)
                 .render();
 
         for (int i = 0; i < 9; ++i) {

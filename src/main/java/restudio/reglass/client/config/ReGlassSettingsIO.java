@@ -81,6 +81,12 @@ public final class ReGlassSettingsIO {
 
         d.pixelatedGridSize = c.pixelatedGridSize;
 
+        d.hoverScalePx = c.hoverScalePx;
+        d.focusScalePx = c.focusScalePx;
+        d.focusBorderWidthPx = c.focusBorderWidthPx;
+        d.focusBorderIntensity = c.focusBorderIntensity;
+        d.focusBorderSpeed = c.focusBorderSpeed;
+
         return d;
     }
 
@@ -121,6 +127,12 @@ public final class ReGlassSettingsIO {
         c.defaultGlareAngleRad = d.glareAngleRad;
 
         c.pixelatedGridSize = d.pixelatedGridSize;
+
+        c.hoverScalePx = d.hoverScalePx;
+        c.focusScalePx = d.focusScalePx;
+        c.focusBorderWidthPx = d.focusBorderWidthPx;
+        c.focusBorderIntensity = d.focusBorderIntensity;
+        c.focusBorderSpeed = d.focusBorderSpeed;
     }
 
     public static class Data {
@@ -158,5 +170,11 @@ public final class ReGlassSettingsIO {
         public float glareAngleRad = (float) (-45.0 * Math.PI / 180.0);
 
         public float pixelatedGridSize = 8.0f;
+
+        public float hoverScalePx = 1.5f;
+        public float focusScalePx = 2.5f;
+        public float focusBorderWidthPx = 2.0f;
+        public float focusBorderIntensity = 0.75f;
+        public float focusBorderSpeed = 1.6f;
     }
 }

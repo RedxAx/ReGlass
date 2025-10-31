@@ -30,7 +30,6 @@ public abstract class GameRendererMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void reglass$beginGuiFrame(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
-        LiquidGlassUniforms.get().beginFrame();
         double deltaTicks;
         try {
             deltaTicks = tickCounter.getDynamicDeltaTicks();
@@ -38,6 +37,7 @@ public abstract class GameRendererMixin {
             deltaTicks = 1.0 / 60.0 * 20.0;
         }
         double dt = deltaTicks / 20.0;
+        LiquidGlassUniforms.get().beginFrame(dt);
         ReGlassAnim.INSTANCE.update(ReGlassConfig.INSTANCE, dt);
     }
 

@@ -41,6 +41,14 @@ public final class LiquidGlassUniforms {
     private List<Integer> usedBlurRadiiOrdered = new ArrayList<>();
     private final HashMap<Integer, Integer> blurRadiusToIndex = new HashMap<>();
 
+    private static final class FadeState {
+        float hover;
+        float focus;
+    }
+
+    private final HashMap<Long, FadeState> fades = new HashMap<>();
+    private double dtSeconds = 0.0;
+
     private LiquidGlassUniforms() {
         samplerInfo = RenderSystem.getDevice().createBuffer(() -> "reglass SamplerInfo", 130, 16);
 
@@ -53,6 +61,11 @@ public final class LiquidGlassUniforms {
         calc.putVec3();
         calc.align(16);
         calc.putVec4();
+        calc.putFloat();
+        calc.putFloat();
+        calc.putFloat();
+        calc.putFloat();
+        calc.putFloat();
         calc.putFloat();
         calc.putFloat();
         calc.putFloat();
@@ -71,11 +84,12 @@ public final class LiquidGlassUniforms {
         bgConfig = RenderSystem.getDevice().createBuffer(() -> "reglass BgConfig", 130, bgConfigSize);
     }
 
-    public void beginFrame() {
+    public void beginFrame(double dtSeconds) {
         widgets.clear();
         screenWantsBlur = false;
         usedBlurRadiiOrdered.clear();
         blurRadiusToIndex.clear();
+        this.dtSeconds = Math.max(0.0, dtSeconds);
     }
 
     public void setScreenWantsBlur(boolean wantsBlur) { this.screenWantsBlur = wantsBlur; }
@@ -118,6 +132,11 @@ public final class LiquidGlassUniforms {
             b.putFloat(ReGlassAnim.INSTANCE.debugStep());
             b.putFloat(config.features.pixelatedGrid ? 1.0f : 0.0f);
             b.putFloat(ReGlassAnim.INSTANCE.pixelatedGridSize());
+            b.putFloat(ReGlassAnim.INSTANCE.hoverScalePx());
+            b.putFloat(ReGlassAnim.INSTANCE.focusScalePx());
+            b.putFloat(ReGlassAnim.INSTANCE.focusBorderWidthPx());
+            b.putFloat(ReGlassAnim.INSTANCE.focusBorderIntensity());
+            b.putFloat(ReGlassAnim.INSTANCE.focusBorderSpeed());
         }
 
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(bgConfig, false, true)) {
@@ -138,6 +157,23 @@ public final class LiquidGlassUniforms {
     public void addWidget(LiquidGlassGuiElementRenderState element) {
         if (widgets.size() >= MAX_WIDGETS) return;
         widgets.add(element);
+    }
+
+    private static long rectKey(int x1, int y1, int x2, int y2) {
+        long a = (((long) x1) & 0xFFFFFFFFL) | ((((long) y1) & 0xFFFFFFFFL) << 32);
+        long b = (((long) x2) & 0xFFFFFFFFL) | ((((long) y2) & 0xFFFFFFFFL) << 32);
+        long h = 1469598103934665603L;
+        h ^= a; h *= 1099511628211L;
+        h ^= b; h *= 1099511628211L;
+        return h;
+    }
+
+    private float smoothToward(float current, float target, double dt, float tau) {
+        if (tau <= 1e-5f) return target;
+        float a = (float) (1.0 - Math.exp(-Math.max(0.0, dt) / Math.max(1e-4, tau)));
+        float v = current + (target - current) * a;
+        if (Math.abs(v - target) < 1e-4f) return target;
+        return v;
     }
 
     public void uploadWidgetInfo() {
@@ -259,7 +295,14 @@ public final class LiquidGlassUniforms {
                     int radius = Math.max(0, s.getBlurRadius());
                     Integer idx = blurRadiusToIndex.get(radius);
                     if (idx == null) idx = 0;
-                    b.putVec4((float) idx, 0f, 0f, 0f);
+                    var w = widgets.get(i);
+                    long key = rectKey(w.x1(), w.y1(), w.x2(), w.y2());
+                    FadeState fs = fades.computeIfAbsent(key, k -> new FadeState());
+                    fs.hover = smoothToward(fs.hover, Math.max(0f, Math.min(1f, w.hover())), dtSeconds, 0.12f);
+                    fs.focus = smoothToward(fs.focus, Math.max(0f, Math.min(1f, w.focus())), dtSeconds, 0.18f);
+                    double h = Math.sin(w.x1() * 12.9898 + w.y1() * 78.233 + i * 37.719);
+                    float seed = (float) (h - Math.floor(h));
+                    b.putVec4((float) idx, fs.hover, fs.focus, seed);
                 } else b.putVec4(0f, 0f, 0f, 0f);
             }
         }

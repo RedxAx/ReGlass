@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2f;
 import restudio.reglass.client.api.WidgetStyle;
 
-public record LiquidGlassGuiElementRenderState(int x1, int y1, int x2, int y2, float cornerRadius, @Nullable Text text, WidgetStyle style, Matrix3x2f pose, @Nullable ScreenRect scissorArea) implements SpecialGuiElementRenderState {
+public record LiquidGlassGuiElementRenderState(int x1, int y1, int x2, int y2, float cornerRadius, @Nullable Text text, WidgetStyle style, Matrix3x2f pose, @Nullable ScreenRect scissorArea, float hover, float focus) implements SpecialGuiElementRenderState {
 
     @Override
     public float scale() {

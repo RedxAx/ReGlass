@@ -126,6 +126,20 @@ public class ReGlassConfigScreen extends Screen {
         addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Glare Factor"), 0f, 100f, cfg.defaultGlareFactor, v -> cfg.defaultGlareFactor = v.floatValue()), y).active = cfg.features.enableRedesign;
         y += widgetHeight + gap * 2;
 
+        addTitle("Interactions", widgetX, y, widgetWidth);
+        y += widgetHeight;
+
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Hover Scale (px)"), 0f, 6f, cfg.hoverScalePx, v -> cfg.hoverScalePx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        y += widgetHeight + gap;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Scale (px)"), 0f, 8f, cfg.focusScalePx, v -> cfg.focusScalePx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        y += widgetHeight + gap;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Border Width (px)"), 0f, 6f, cfg.focusBorderWidthPx, v -> cfg.focusBorderWidthPx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        y += widgetHeight + gap;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Border Intensity"), 0f, 1f, cfg.focusBorderIntensity, v -> cfg.focusBorderIntensity = v.floatValue()), y).active = cfg.features.enableRedesign;
+        y += widgetHeight + gap;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Border Speed"), 0f, 4f, cfg.focusBorderSpeed, v -> cfg.focusBorderSpeed = v.floatValue()), y).active = cfg.features.enableRedesign;
+        y += widgetHeight + gap * 2;
+
         addTitle("Debug", widgetX, y, widgetWidth);
         y += widgetHeight;
 
@@ -250,7 +264,7 @@ public class ReGlassConfigScreen extends Screen {
         public boolean isMouseOver(double mouseX, double mouseY) {
             return false;
         }
-        
+
         @Override
         protected void appendClickableNarrations(NarrationMessageBuilder builder) {}
     }
