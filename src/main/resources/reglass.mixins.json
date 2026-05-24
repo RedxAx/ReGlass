@@ -29,7 +29,6 @@
 //#if MC < 26
     "accessor.GuiRenderStateAccessor",
 //#endif
-    "accessor.OptionsAccessor",
 //#if MC >= 26
     "accessor.ScissorStackAccessor",
 //#endif
@@ -58,6 +57,7 @@
     "client.InventoryScreenMixin",
     "client.LoomScreenMixin",
     "client.MerchantScreenMixin",
+    "client.OptionsMixin",
     "client.RecipeBookComponentMixin",
     "client.RecipeBookTabButtonMixin",
     "client.ScreenMixin",

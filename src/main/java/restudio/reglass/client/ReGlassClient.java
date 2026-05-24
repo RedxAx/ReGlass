@@ -1,8 +1,6 @@
 package restudio.reglass.client;
 
-//#if MC < 26
 import java.util.Arrays;
-//#endif
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 //#if MC >= 26
@@ -37,11 +35,9 @@ import restudio.reglass.client.config.ReGlassSettingsIO;
 //#if MC < 26
 import restudio.reglass.client.screen.config.ReGlassConfigScreen;
 //#endif
-import restudio.reglass.mixin.accessor.OptionsAccessor;
 //#if MC >= 26
 import restudio.reglass.client.screen.config.ReGlassConfigScreen;
 
-import java.util.Arrays;
 //#endif
 
 public class ReGlassClient implements ClientModInitializer {
@@ -56,7 +52,6 @@ public class ReGlassClient implements ClientModInitializer {
     private static final KeyBinding PLAYGROUND_KEY = new KeyBinding("key.reglass.playground", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, KEY_CATEGORY);
     private static final KeyBinding TOGGLE_REDESIGN_KEY = new KeyBinding("key.reglass.toggle_redesign", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, KEY_CATEGORY);
 //#endif
-    private static boolean keyMappingsRegistered;
     private static boolean toggleRedesignWasDown;
 
 //#if MC >= 26
@@ -76,12 +71,6 @@ public class ReGlassClient implements ClientModInitializer {
         ReGlassSettingsIO.loadIntoMemory();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (!keyMappingsRegistered) {
-                if (client.options == null) {
-                    return;
-                }
-                registerKeyMappings(client);
-            }
             handleGlobalToggleRedesignKey(client);
 //#if MC >= 26.2
             while (CONFIG_KEY.consumeClick()) {
@@ -121,25 +110,16 @@ public class ReGlassClient implements ClientModInitializer {
     }
 
 //#if MC >= 26
-    private static void registerKeyMappings(Minecraft client) {
-        KeyMapping[] existingMappings = client.options.keyMappings;
+    public static KeyMapping[] appendKeyMappings(KeyMapping[] existingMappings) {
         KeyMapping[] mappings = Arrays.copyOf(existingMappings, existingMappings.length + 3);
 //#else
-    private static void registerKeyMappings(MinecraftClient client) {
-        KeyBinding[] existingMappings = client.options.allKeys;
+    public static KeyBinding[] appendKeyMappings(KeyBinding[] existingMappings) {
         KeyBinding[] mappings = Arrays.copyOf(existingMappings, existingMappings.length + 3);
 //#endif
         mappings[existingMappings.length] = CONFIG_KEY;
         mappings[existingMappings.length + 1] = PLAYGROUND_KEY;
         mappings[existingMappings.length + 2] = TOGGLE_REDESIGN_KEY;
-        ((OptionsAccessor) client.options).setKeyMappings(mappings);
-//#if MC >= 26
-        KeyMapping.resetMapping();
-//#else
-        KeyBinding.updateKeysByCode();
-//#endif
-        client.options.load();
-        keyMappingsRegistered = true;
+        return mappings;
     }
 
 //#if MC >= 26
