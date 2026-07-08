@@ -24,6 +24,7 @@
     "client.ScreenMixin",
     "client.TitleScreenMixin",
     "logical.GameRendererMixin",
-    "widgets.DrawContextMixin"
+    "widgets.ClickableWidgetMixin",
+    "widgets.PressableWidgetMixin"
   ]
 }
