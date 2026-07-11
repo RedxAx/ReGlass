@@ -6,7 +6,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-//#if MC >= 26
+//? if >= 26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -27,8 +27,8 @@ import net.minecraft.world.inventory.MerchantMenu;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
-//#else
-import net.minecraft.block.entity.ShulkerBoxBlockEntity;
+//? } else {
+/*import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -48,7 +48,7 @@ import net.minecraft.screen.ShulkerBoxScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
-//#endif
+*///? }
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -56,19 +56,19 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-//#if MC < 26
-import restudio.reglass.client.ContainerColorContext;
-//#endif
+//? if < 26 {
+/*import restudio.reglass.client.ContainerColorContext;
+*///? }
 import restudio.reglass.client.api.ReGlassApi;
 import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.api.WidgetStyle;
-//#if MC >= 26
+//? if >= 26 {
 import restudio.reglass.client.ContainerColorContext;
-//#endif
+//? }
 import restudio.reglass.mixin.accessor.ShulkerBoxMenuAccessor;
 import restudio.reglass.mixin.accessor.SlotAccessor;
 
-//#if MC >= 26
+//? if >= 26 {
 @Mixin(AbstractContainerScreen.class)
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> extends Screen {
     @Shadow @Final protected T menu;
@@ -80,8 +80,8 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
     @Shadow @Final protected Component playerInventoryTitle;
     @Shadow protected int leftPos;
     @Shadow protected int topPos;
-//#else
-@Mixin(HandledScreen.class)
+//? } else {
+/*@Mixin(HandledScreen.class)
 public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> extends Screen {
     @Shadow @Final protected T handler;
     @Shadow protected int titleX;
@@ -92,15 +92,15 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
     @Shadow @Final protected Text playerInventoryTitle;
     @Shadow protected int x;
     @Shadow protected int y;
-//#endif
+*///? }
 
     @Unique private final Map<Slot, int[]> reglass$originalSlotPositions = new IdentityHashMap<>();
 
-//#if MC >= 26
+//? if >= 26 {
     protected AbstractContainerScreenMixin(Component title) {
-//#else
-    protected AbstractContainerScreenMixin(Text title) {
-//#endif
+//? } else {
+    /*protected AbstractContainerScreenMixin(Text title) {
+*///? }
         super(title);
     }
 
@@ -119,41 +119,41 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
             return;
         }
 
-//#if MC >= 26
+//? if >= 26 {
         if (this.menu instanceof BeaconMenu) {
-//#else
-        if (this.handler instanceof BeaconScreenHandler) {
-//#endif
+//? } else {
+        /*if (this.handler instanceof BeaconScreenHandler) {
+*///? }
             reglass$spaceBeaconSlots();
-//#if MC >= 26
+//? if >= 26 {
         } else if (this.menu instanceof BrewingStandMenu) {
-//#else
-        } else if (this.handler instanceof BrewingStandScreenHandler) {
-//#endif
+//? } else {
+        /*} else if (this.handler instanceof BrewingStandScreenHandler) {
+*///? }
             reglass$spaceBrewingStandSlots();
-//#if MC >= 26
+//? if >= 26 {
         } else if (this.menu instanceof GrindstoneMenu) {
-//#else
-        } else if (this.handler instanceof GrindstoneScreenHandler) {
-//#endif
+//? } else {
+        /*} else if (this.handler instanceof GrindstoneScreenHandler) {
+*///? }
             reglass$spaceGrindstoneSlots();
-//#if MC >= 26
+//? if >= 26 {
         } else if (this.menu instanceof LoomMenu) {
-//#else
-        } else if (this.handler instanceof LoomScreenHandler) {
-//#endif
+//? } else {
+        /*} else if (this.handler instanceof LoomScreenHandler) {
+*///? }
             reglass$spaceLoomSlots();
-//#if MC >= 26
+//? if >= 26 {
         } else if (this.menu instanceof EnchantmentMenu) {
-//#else
-        } else if (this.handler instanceof EnchantmentScreenHandler) {
-//#endif
+//? } else {
+        /*} else if (this.handler instanceof EnchantmentScreenHandler) {
+*///? }
             reglass$spaceEnchantmentSlots();
         }
         reglass$spaceGenericHotbar();
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(
             method = "extractContents",
             at = @At(
@@ -162,53 +162,53 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
             )
     )
     private void reglass$extractContainerGlass(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-//#else
-    @Inject(method = "renderMain", at = @At("HEAD"))
+//? } else {
+    /*@Inject(method = "renderMain", at = @At("HEAD"))
     private void reglass$renderContainerGlass(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-//#endif
+*///? }
         ReGlassConfig cfg = ReGlassConfig.INSTANCE;
-//#if MC >= 26
+//? if >= 26 {
         if (!cfg.features.enableRedesign || !cfg.features.containers) {
             return;
-//#else
-        if (cfg.features.enableRedesign && cfg.features.containers) {
+//? } else {
+        /*if (cfg.features.enableRedesign && cfg.features.containers) {
             reglass$renderBatchBlobs(context);
-//#endif
+*///? }
         }
-//#if MC >= 26
+//? if >= 26 {
 
         reglass$renderBatchBlobs(context);
-//#endif
+//? }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
     private void reglass$hidePlayerInventoryLabels(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
-//#else
-    @Inject(method = "drawForeground", at = @At("HEAD"), cancellable = true)
+//? } else {
+    /*@Inject(method = "drawForeground", at = @At("HEAD"), cancellable = true)
     private void reglass$hidePlayerInventoryLabels(DrawContext context, int mouseX, int mouseY, CallbackInfo ci) {
-//#endif
+*///? }
         ReGlassConfig cfg = ReGlassConfig.INSTANCE;
         if (!cfg.features.enableRedesign || !cfg.features.containers) {
             return;
         }
 
         if (!reglass$isPlayerInventory()) {
-//#if MC >= 26
+//? if >= 26 {
             context.text(this.font, this.title, reglass$labelX(this.titleLabelX), reglass$labelY(this.titleLabelY), 0xFFFFFFFF, true);
-//#else
-            context.drawText(this.textRenderer, this.title, reglass$labelX(this.titleX), reglass$labelY(this.titleY), 0xFFFFFFFF, true);
-//#endif
+//? } else {
+            /*context.drawText(this.textRenderer, this.title, reglass$labelX(this.titleX), reglass$labelY(this.titleY), 0xFFFFFFFF, true);
+*///? }
         }
         ci.cancel();
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$renderBatchBlobs(GuiGraphicsExtractor context) {
-//#else
-    private void reglass$renderBatchBlobs(DrawContext context) {
-//#endif
+//? } else {
+    /*private void reglass$renderBatchBlobs(DrawContext context) {
+*///? }
         for (int[] group : reglass$getSlotGroups()) {
             reglass$renderGroup(context, group);
         }
@@ -217,13 +217,13 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
     @Unique
     private List<int[]> reglass$getSlotGroups() {
         List<Slot> slots = new ArrayList<>();
-//#if MC >= 26
+//? if >= 26 {
         for (Slot slot : this.menu.slots) {
             if (slot.isActive()) {
-//#else
-        for (Slot slot : this.handler.slots) {
+//? } else {
+        /*for (Slot slot : this.handler.slots) {
             if (slot.isEnabled()) {
-//#endif
+*///? }
                 slots.add(slot);
             }
         }
@@ -280,22 +280,22 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
 
     @Unique
     private void reglass$mergeVillagerCostSlots(List<int[]> groups) {
-//#if MC >= 26
+//? if >= 26 {
         if (!(this.menu instanceof MerchantMenu) || this.menu.slots.size() < 2) {
-//#else
-        if (!(this.handler instanceof MerchantScreenHandler) || this.handler.slots.size() < 2) {
-//#endif
+//? } else {
+        /*if (!(this.handler instanceof MerchantScreenHandler) || this.handler.slots.size() < 2) {
+*///? }
             return;
         }
-//#if MC >= 26
+//? if >= 26 {
         Slot first = this.menu.slots.get(0);
         Slot second = this.menu.slots.get(1);
         if (!first.isActive() || !second.isActive()) {
-//#else
-        Slot first = this.handler.slots.get(0);
+//? } else {
+        /*Slot first = this.handler.slots.get(0);
         Slot second = this.handler.slots.get(1);
         if (!first.isEnabled() || !second.isEnabled()) {
-//#endif
+*///? }
             return;
         }
 
@@ -316,11 +316,11 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$renderGroup(GuiGraphicsExtractor context, int[] group) {
-//#else
-    private void reglass$renderGroup(DrawContext context, int[] group) {
-//#endif
+//? } else {
+    /*private void reglass$renderGroup(DrawContext context, int[] group) {
+*///? }
         int groupWidth = group[2] - group[0];
         int groupHeight = group[3] - group[1];
         if (reglass$isHotbarGroup(groupWidth, groupHeight)) {
@@ -329,27 +329,27 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
         }
 
         int padding = groupWidth == 18 && groupHeight == 18 ? reglass$singleSlotPadding() : 4;
-//#if MC >= 26
+//? if >= 26 {
         int x = this.leftPos + group[0] - padding - 1;
         int y = this.topPos + group[1] - padding - 1;
-//#else
-        int groupX = this.x + group[0] - padding - 1;
+//? } else {
+        /*int groupX = this.x + group[0] - padding - 1;
         int groupY = this.y + group[1] - padding - 1;
-//#endif
+*///? }
         int width = groupWidth + padding * 2;
         int height = groupHeight + padding * 2;
 
         ReGlassApi.create(context)
-//#if MC >= 26
+//? if >= 26 {
                 .dimensions(x, y, width, height)
-//#else
-                .dimensions(groupX, groupY, width, height)
-//#endif
+//? } else {
+                /*.dimensions(groupX, groupY, width, height)
+*///? }
                 .cornerRadius(Math.min(12, Math.max(6, Math.min(width, height) * 0.22f)))
                 .style(reglass$panelStyle(group, groupWidth, groupHeight).layer(1))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
     }
 
@@ -359,35 +359,35 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$renderHotbarGroup(GuiGraphicsExtractor context, int[] group) {
-//#else
-    private void reglass$renderHotbarGroup(DrawContext context, int[] group) {
-//#endif
+//? } else {
+    /*private void reglass$renderHotbarGroup(DrawContext context, int[] group) {
+*///? }
         ReGlassApi.create(context)
-//#if MC >= 26
+//? if >= 26 {
                 .dimensions(this.leftPos + group[0] - 4, this.topPos + group[1] - 2, 170, 22)
-//#else
-                .dimensions(this.x + group[0] - 4, this.y + group[1] - 2, 170, 22)
-//#endif
+//? } else {
+                /*.dimensions(this.x + group[0] - 4, this.y + group[1] - 2, 170, 22)
+*///? }
                 .cornerRadius(11)
                 .style(WidgetStyle.create()
                         .tint(0x000000, 0.3f)
                         .layer(1))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
     }
 
     @Unique
     private WidgetStyle reglass$panelStyle() {
-//#if MC >= 26
+//? if >= 26 {
         return WidgetStyle.create()
                 .tint(0x000000, 0.16f);
-//#else
-        return WidgetStyle.create().tint(0x000000, 0.16f);
-//#endif
+//? } else {
+        /*return WidgetStyle.create().tint(0x000000, 0.16f);
+*///? }
     }
 
     @Unique
@@ -401,21 +401,21 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
 
     @Unique
     private Integer reglass$shulkerMainTint(int[] group, int groupWidth, int groupHeight) {
-//#if MC >= 26
+//? if >= 26 {
         if (!(this.menu instanceof ShulkerBoxMenu) || groupWidth != 162 || groupHeight != 54 || group[1] >= 80) {
-//#else
-        if (!(this.handler instanceof ShulkerBoxScreenHandler) || groupWidth != 162 || groupHeight != 54 || group[1] >= 80) {
-//#endif
+//? } else {
+        /*if (!(this.handler instanceof ShulkerBoxScreenHandler) || groupWidth != 162 || groupHeight != 54 || group[1] >= 80) {
+*///? }
             return null;
         }
 
-//#if MC >= 26
+//? if >= 26 {
         Container container = ((ShulkerBoxMenuAccessor) this.menu).reglass$getContainer();
         DyeColor color = container instanceof ShulkerBoxBlockEntity shulkerBox ? shulkerBox.getColor() : null;
-//#else
-        Inventory inventory = ((ShulkerBoxMenuAccessor) this.handler).reglass$getInventory();
+//? } else {
+        /*Inventory inventory = ((ShulkerBoxMenuAccessor) this.handler).reglass$getInventory();
         DyeColor color = inventory instanceof ShulkerBoxBlockEntity shulkerBox ? shulkerBox.getColor() : null;
-//#endif
+*///? }
         if (color == null) {
             color = ContainerColorContext.getLastShulkerColor();
         }
@@ -430,24 +430,24 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
 
     @Unique
     private DyeColor reglass$shulkerColorFromTitle() {
-//#if MC >= 26
+//? if >= 26 {
         String title = this.title.getString().toLowerCase(Locale.ROOT).replace('_', ' ');
-//#else
-        String titleString = this.title.getString().toLowerCase(Locale.ROOT).replace('_', ' ');
-//#endif
+//? } else {
+        /*String titleString = this.title.getString().toLowerCase(Locale.ROOT).replace('_', ' ');
+*///? }
         DyeColor[] colors = DyeColor.values();
         List<DyeColor> sortedColors = new ArrayList<>(List.of(colors));
-//#if MC >= 26
+//? if >= 26 {
         sortedColors.sort(Comparator.comparingInt((DyeColor color) -> color.getName().length()).reversed());
-//#else
-        sortedColors.sort(Comparator.comparingInt((DyeColor color) -> color.getId().length()).reversed());
-//#endif
+//? } else {
+        /*sortedColors.sort(Comparator.comparingInt((DyeColor color) -> color.getId().length()).reversed());
+*///? }
         for (DyeColor color : sortedColors) {
-//#if MC >= 26
+//? if >= 26 {
             if (title.contains(color.getName().replace('_', ' '))) {
-//#else
-            if (titleString.contains(color.getId().replace('_', ' '))) {
-//#endif
+//? } else {
+            /*if (titleString.contains(color.getId().replace('_', ' '))) {
+*///? }
                 return color;
             }
         }
@@ -478,75 +478,75 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
 
     @Unique
     private int reglass$singleSlotPadding() {
-//#if MC >= 26
+//? if >= 26 {
         return this.menu instanceof BeaconMenu ? 2 : 3;
-//#else
-        return this.handler instanceof BeaconScreenHandler ? 2 : 3;
-//#endif
+//? } else {
+        /*return this.handler instanceof BeaconScreenHandler ? 2 : 3;
+*///? }
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private int reglass$labelY(int y) {
         if (this.menu instanceof LoomMenu) {
-//#else
-    private int reglass$labelY(int labelY) {
+//? } else {
+    /*private int reglass$labelY(int labelY) {
         if (this.handler instanceof LoomScreenHandler) {
-//#endif
+*///? }
             return 32;
         }
-//#if MC >= 26
+//? if >= 26 {
         if (this.menu instanceof CraftingMenu
                 || this.menu instanceof CrafterMenu
                 || this.menu instanceof DispenserMenu) {
             return y - 4;
-//#else
-        if (this.handler instanceof CraftingScreenHandler
+//? } else {
+        /*if (this.handler instanceof CraftingScreenHandler
                 || this.handler instanceof CrafterScreenHandler
                 || this.handler instanceof Generic3x3ContainerScreenHandler) {
             return labelY - 4;
-//#endif
+*///? }
         }
-//#if MC >= 26
+//? if >= 26 {
         if (this.menu instanceof BrewingStandMenu) {
             return y - 10;
-//#else
-        if (this.handler instanceof BrewingStandScreenHandler) {
+//? } else {
+        /*if (this.handler instanceof BrewingStandScreenHandler) {
             return labelY - 12;
-//#endif
+*///? }
         }
-//#if MC >= 26
+//? if >= 26 {
         return y - 2;
-//#else
-        return labelY - 2;
-//#endif
+//? } else {
+        /*return labelY - 2;
+*///? }
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private int reglass$labelX(int x) {
         if (this.menu instanceof LoomMenu) {
             return -8;
-//#else
-    private int reglass$labelX(int labelX) {
+//? } else {
+    /*private int reglass$labelX(int labelX) {
         if (this.handler instanceof LoomScreenHandler) {
             return -4;
-//#endif
+*///? }
         }
-//#if MC >= 26
+//? if >= 26 {
         return x;
-//#else
-        return labelX;
-//#endif
+//? } else {
+        /*return labelX;
+*///? }
     }
 
     @Unique
     private void reglass$rememberOriginalSlots() {
-//#if MC >= 26
+//? if >= 26 {
         for (Slot slot : this.menu.slots) {
-//#else
-        for (Slot slot : this.handler.slots) {
-//#endif
+//? } else {
+        /*for (Slot slot : this.handler.slots) {
+*///? }
             reglass$originalSlotPositions.computeIfAbsent(slot, s -> new int[] { s.x, s.y });
         }
     }
@@ -573,15 +573,15 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
     private void reglass$spaceGenericHotbar() {
         List<Slot> candidates = new ArrayList<>();
         int bestY = Integer.MIN_VALUE;
-//#if MC >= 26
+//? if >= 26 {
         for (Slot slot : this.menu.slots) {
             int containerSlot = slot.getContainerSlot();
             if (!slot.isActive() || containerSlot < 0 || containerSlot > 8) {
-//#else
-        for (Slot slot : this.handler.slots) {
+//? } else {
+        /*for (Slot slot : this.handler.slots) {
             int containerSlot = slot.getIndex();
             if (!slot.isEnabled() || containerSlot < 0 || containerSlot > 8) {
-//#endif
+*///? }
                 continue;
             }
             if (slot.y > bestY) {
@@ -591,26 +591,26 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
         if (bestY == Integer.MIN_VALUE) {
             return;
         }
-//#if MC >= 26
+//? if >= 26 {
         for (Slot slot : this.menu.slots) {
             int containerSlot = slot.getContainerSlot();
             if (slot.isActive() && containerSlot >= 0 && containerSlot <= 8 && slot.y == bestY) {
-//#else
-        for (Slot slot : this.handler.slots) {
+//? } else {
+        /*for (Slot slot : this.handler.slots) {
             int containerSlot = slot.getIndex();
             if (slot.isEnabled() && containerSlot >= 0 && containerSlot <= 8 && slot.y == bestY) {
-//#endif
+*///? }
                 candidates.add(slot);
             }
         }
         if (candidates.size() != 9) {
             return;
         }
-//#if MC >= 26
+//? if >= 26 {
         candidates.sort(Comparator.comparingInt(Slot::getContainerSlot));
-//#else
-        candidates.sort(Comparator.comparingInt(Slot::getIndex));
-//#endif
+//? } else {
+        /*candidates.sort(Comparator.comparingInt(Slot::getIndex));
+*///? }
         for (Slot slot : candidates) {
             int[] original = reglass$originalSlotPositions.get(slot);
             if (original != null) {
@@ -690,32 +690,32 @@ public abstract class AbstractContainerScreenMixin<T extends ScreenHandler> exte
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$setSlotPosition(int index, int x, int y) {
         if (index < 0 || index >= this.menu.slots.size()) {
-//#else
-    private void reglass$setSlotPosition(int index, int slotX, int slotY) {
+//? } else {
+    /*private void reglass$setSlotPosition(int index, int slotX, int slotY) {
         if (index < 0 || index >= this.handler.slots.size()) {
-//#endif
+*///? }
             return;
         }
-//#if MC >= 26
+//? if >= 26 {
         reglass$setSlotPosition(this.menu.slots.get(index), x, y);
-//#else
-        reglass$setSlotPosition(this.handler.slots.get(index), slotX, slotY);
-//#endif
+//? } else {
+        /*reglass$setSlotPosition(this.handler.slots.get(index), slotX, slotY);
+*///? }
     }
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$setSlotPosition(Slot slot, int x, int y) {
         ((SlotAccessor) slot).reglass$setX(x);
         ((SlotAccessor) slot).reglass$setY(y);
-//#else
-    private void reglass$setSlotPosition(Slot slot, int slotX, int slotY) {
+//? } else {
+    /*private void reglass$setSlotPosition(Slot slot, int slotX, int slotY) {
         ((SlotAccessor) slot).reglass$setX(slotX);
         ((SlotAccessor) slot).reglass$setY(slotY);
-//#endif
+*///? }
     }
 
     @Unique

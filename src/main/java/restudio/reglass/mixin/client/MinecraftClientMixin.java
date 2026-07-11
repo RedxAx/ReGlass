@@ -1,12 +1,12 @@
 package restudio.reglass.mixin.client;
 
-//#if MC >= 26
+//? if >= 26 {
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-//#else
-import net.minecraft.client.MinecraftClient;
+//? } else {
+/*import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
-//#endif
+*///? }
 import net.minecraft.client.gui.screen.world.SelectWorldScreen;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,11 +17,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.screen.world.CustomWorldSelectScreen;
 
-//#if MC >= 26
+//? if >= 26 {
 @Mixin(Minecraft.class)
-//#else
-@Mixin(MinecraftClient.class)
-//#endif
+//? } else {
+/*@Mixin(MinecraftClient.class)
+*///? }
 public abstract class MinecraftClientMixin {
 
     @Shadow

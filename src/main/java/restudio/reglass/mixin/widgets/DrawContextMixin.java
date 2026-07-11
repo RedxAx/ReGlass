@@ -1,19 +1,19 @@
 package restudio.reglass.mixin.widgets;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-//#if MC >= 26
+//? if >= 26 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-//#else
-import net.minecraft.client.gl.RenderPipelines;
+//? } else {
+/*import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
-//#endif
+*///? }
 import java.util.HashMap;
 import java.util.Map;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,50 +26,50 @@ import restudio.reglass.client.api.ReGlassApi;
 import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.api.WidgetStyle;
 
-//#if MC >= 26
+//? if >= 26 {
 @Mixin(GuiGraphicsExtractor.class)
-//#else
-@Mixin(DrawContext.class)
-//#endif
+//? } else {
+/*@Mixin(DrawContext.class)
+*///? }
 public abstract class DrawContextMixin {
 
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private static final Identifier BUTTON_TEXTURE = Identifier.withDefaultNamespace("widget/button");
-//#else
-    private static final Identifier BUTTON_TEXTURE = Identifier.ofVanilla("widget/button");
-//#endif
+//? } else {
+    /*private static final Identifier BUTTON_TEXTURE = Identifier.ofVanilla("widget/button");
+*///? }
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private static final Identifier BUTTON_DISABLED_TEXTURE = Identifier.withDefaultNamespace("widget/button_disabled");
-//#else
-    private static final Identifier BUTTON_DISABLED_TEXTURE = Identifier.ofVanilla("widget/button_disabled");
-//#endif
+//? } else {
+    /*private static final Identifier BUTTON_DISABLED_TEXTURE = Identifier.ofVanilla("widget/button_disabled");
+*///? }
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private static final Identifier BUTTON_HIGHLIGHTED_TEXTURE = Identifier.withDefaultNamespace("widget/button_highlighted");
-//#else
-    private static final Identifier BUTTON_HIGHLIGHTED_TEXTURE = Identifier.ofVanilla("widget/button_highlighted");
-//#endif
+//? } else {
+    /*private static final Identifier BUTTON_HIGHLIGHTED_TEXTURE = Identifier.ofVanilla("widget/button_highlighted");
+*///? }
     @Unique
-//#if MC >= 26
+//? if >= 26 {
     private static final Identifier VILLAGER_TRADE_ARROW_OUT_OF_STOCK = Identifier.withDefaultNamespace("container/villager/trade_arrow_out_of_stock");
-//#else
-    private static final Identifier VILLAGER_TRADE_ARROW_OUT_OF_STOCK = Identifier.ofVanilla("container/villager/trade_arrow_out_of_stock");
-//#endif
+//? } else {
+    /*private static final Identifier VILLAGER_TRADE_ARROW_OUT_OF_STOCK = Identifier.ofVanilla("container/villager/trade_arrow_out_of_stock");
+*///? }
     @Unique
     private static final Map<Long, Double> REGLASS$SCROLLER_Y = new HashMap<>();
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blurBeforeThisStratum", at = @At("HEAD"))
     private void reglass$onBlurBeforeThisStratum(CallbackInfo ci) {
         LiquidGlassUniforms.get().setScreenWantsBlur(true);
     }
 
     @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
-//#else
-    @Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
     private void onDrawTexture(RenderPipeline pipeline, Identifier sprite, int x, int y, int width, int height, int color, CallbackInfo ci) {
         if (reglass$handleContainerSprite(sprite, x, y, width, height)) {
@@ -81,21 +81,21 @@ public abstract class DrawContextMixin {
                 || sprite.getPath().equals(BUTTON_DISABLED_TEXTURE.getPath())
                 || sprite.getPath().equals(BUTTON_HIGHLIGHTED_TEXTURE.getPath());
 
-//#if MC >= 26
+//? if >= 26 {
         if (isButtonTexture && (ReGlassConfig.INSTANCE.features.enableRedesign && ReGlassConfig.INSTANCE.features.buttons)) {
-//#else
-        if (isButtonTexture && ReGlassConfig.INSTANCE.features.enableRedesign && ReGlassConfig.INSTANCE.features.buttons) {
-//#endif
+//? } else {
+        /*if (isButtonTexture && ReGlassConfig.INSTANCE.features.enableRedesign && ReGlassConfig.INSTANCE.features.buttons) {
+*///? }
             boolean isHighlighted = sprite.getPath().equals(BUTTON_HIGHLIGHTED_TEXTURE.getPath());
             boolean isDisabled = sprite.getPath().equals(BUTTON_DISABLED_TEXTURE.getPath());
             boolean isTradeRowButton = ReGlassConfig.INSTANCE.features.containers && width >= 80 && width <= 100 && height == 20;
             int glassY = isTradeRowButton ? y + 1 : y;
             int glassHeight = isTradeRowButton ? height - 2 : height;
-//#if MC >= 26
+//? if >= 26 {
             ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-            ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+            /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                     .position(x, glassY)
                     .size(width, glassHeight)
                     .hover(isHighlighted ? 1f : 0f)
@@ -105,11 +105,11 @@ public abstract class DrawContextMixin {
         }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V",
-//#else
-    @Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
     private void reglass$onDrawSprite(RenderPipeline pipeline, Identifier sprite, int x, int y, int width, int height, CallbackInfo ci) {
         if (reglass$handleContainerSprite(sprite, x, y, width, height)) {
@@ -117,11 +117,11 @@ public abstract class DrawContextMixin {
         }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIII)V",
-//#else
-    @Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIIIIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIIIIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
     private void reglass$onDrawSlicedSprite(RenderPipeline pipeline, Identifier sprite, int spriteWidth, int spriteHeight, int u, int v, int x, int y, int width, int height, CallbackInfo ci) {
         ReGlassConfig cfg = ReGlassConfig.INSTANCE;
@@ -130,33 +130,33 @@ public abstract class DrawContextMixin {
         }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIII)V",
-//#else
-    @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$onBlitTexture(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, CallbackInfo ci) {
-//#else
-    private void reglass$onDrawTexture(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, CallbackInfo ci) {
-//#endif
+//? } else {
+    /*private void reglass$onDrawTexture(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, CallbackInfo ci) {
+*///? }
         if (reglass$shouldSkipContainerTexture(texture, width, height)) {
             ci.cancel();
         }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIII)V",
-//#else
-    @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$onBlitTextureNoSourceSize(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight, CallbackInfo ci) {
-//#else
-    private void reglass$onDrawTextureNoSourceSize(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight, CallbackInfo ci) {
-//#endif
+//? } else {
+    /*private void reglass$onDrawTextureNoSourceSize(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight, CallbackInfo ci) {
+*///? }
         if (reglass$handleModMenuButtonTexture(texture, x, y, u, v, width, height, textureWidth, textureHeight)) {
             ci.cancel();
             return;
@@ -166,17 +166,17 @@ public abstract class DrawContextMixin {
         }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIII)V",
-//#else
-    @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$onBlitTextureFull(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, int textureHeight, CallbackInfo ci) {
-//#else
-    private void reglass$onDrawTextureFull(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, int textureHeight, CallbackInfo ci) {
-//#endif
+//? } else {
+    /*private void reglass$onDrawTextureFull(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, int textureHeight, CallbackInfo ci) {
+*///? }
         if (reglass$handleModMenuButtonTexture(texture, x, y, u, v, width, height, textureWidth, textureHeight)) {
             ci.cancel();
             return;
@@ -186,17 +186,17 @@ public abstract class DrawContextMixin {
         }
     }
 
-//#if MC >= 26
+//? if >= 26 {
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIIII)V",
-//#else
-    @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
-//#endif
+//? } else {
+    /*@Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
+*///? }
             at = @At("HEAD"), cancellable = true)
-//#if MC >= 26
+//? if >= 26 {
     private void reglass$onBlitTextureFullWithColor(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, int textureHeight, int color, CallbackInfo ci) {
-//#else
-    private void reglass$onDrawTextureFullWithColor(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, int textureHeight, int color, CallbackInfo ci) {
-//#endif
+//? } else {
+    /*private void reglass$onDrawTextureFullWithColor(RenderPipeline pipeline, Identifier texture, int x, int y, float u, float v, int width, int height, int sourceWidth, int sourceHeight, int textureWidth, int textureHeight, int color, CallbackInfo ci) {
+*///? }
         if (reglass$handleModMenuButtonTexture(texture, x, y, u, v, width, height, textureWidth, textureHeight)) {
             ci.cancel();
             return;
@@ -209,14 +209,14 @@ public abstract class DrawContextMixin {
     @Unique
     private boolean reglass$handleModMenuButtonTexture(Identifier texture, int x, int y, float u, float v, int width, int height, int textureWidth, int textureHeight) {
         ReGlassConfig cfg = ReGlassConfig.INSTANCE;
-//#if MC >= 26
+//? if >= 26 {
         if (!cfg.features.enableRedesign || !cfg.features.buttons) {
             return false;
         }
         if (!texture.getNamespace().equals("modmenu")) {
-//#else
-        if (!cfg.features.enableRedesign || !cfg.features.buttons || !texture.getNamespace().equals("modmenu")) {
-//#endif
+//? } else {
+        /*if (!cfg.features.enableRedesign || !cfg.features.buttons || !texture.getNamespace().equals("modmenu")) {
+*///? }
             return false;
         }
 
@@ -226,35 +226,35 @@ public abstract class DrawContextMixin {
         }
 
         String fileName = path.substring("textures/gui/".length());
-//#if MC >= 26
+//? if >= 26 {
         Identifier iconTexture = Identifier.fromNamespaceAndPath("reglass", "textures/gui/modmenu/" + fileName);
-//#else
-        Identifier iconTexture = Identifier.of("reglass", "textures/gui/modmenu/" + fileName);
-//#endif
+//? } else {
+        /*Identifier iconTexture = Identifier.of("reglass", "textures/gui/modmenu/" + fileName);
+*///? }
         boolean hovered = v > 0f && v < 40f;
         boolean disabled = v >= 40f;
 
-//#if MC >= 26
+//? if >= 26 {
         ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-        ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+        /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                 .dimensions(x, y, width, height)
                 .cornerRadius(Math.min(width, height) * 0.5f)
                 .hover(hovered ? 1f : 0f)
                 .style(WidgetStyle.create()
                         .tint(disabled ? 0x000000 : 0xFFFFFFFF, disabled ? 0.36f : 0f)
                         .layer(3))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
 
-//#if MC >= 26
+//? if >= 26 {
         ((GuiGraphicsExtractor)(Object) this).blit(
-//#else
-        ((DrawContext)(Object) this).drawTexture(
-//#endif
+//? } else {
+        /*((DrawContext)(Object) this).drawTexture(
+*///? }
                 RenderPipelines.GUI_TEXTURED,
                 iconTexture,
                 x,
@@ -270,14 +270,14 @@ public abstract class DrawContextMixin {
 
     @Unique
     private boolean reglass$shouldSkipContainerTexture(Identifier texture, int width, int height) {
-//#if MC >= 26
+//? if >= 26 {
         if (!ReGlassConfig.INSTANCE.features.enableRedesign || !ReGlassConfig.INSTANCE.features.containers) {
             return false;
         }
         if (width < 100 || height < 54) {
-//#else
-        if (!ReGlassConfig.INSTANCE.features.enableRedesign || !ReGlassConfig.INSTANCE.features.containers || width < 100 || height < 54) {
-//#endif
+//? } else {
+        /*if (!ReGlassConfig.INSTANCE.features.enableRedesign || !ReGlassConfig.INSTANCE.features.containers || width < 100 || height < 54) {
+*///? }
             return false;
         }
 
@@ -299,11 +299,11 @@ public abstract class DrawContextMixin {
         String path = sprite.getPath();
         if (path.equals("recipe_book/button") || path.equals("recipe_book/button_highlighted")) {
             reglass$renderRoundSprite(x, y, width, height, path.contains("highlighted") ? 1f : 0f, 3);
-//#if MC >= 26
+//? if >= 26 {
             ((GuiGraphicsExtractor)(Object) this).fakeItem(new ItemStack(Items.KNOWLEDGE_BOOK), x + width / 2 - 8, y + height / 2 - 8);
-//#else
-            ((DrawContext)(Object) this).drawItem(new ItemStack(Items.KNOWLEDGE_BOOK), x + width / 2 - 8, y + height / 2 - 8);
-//#endif
+//? } else {
+            /*((DrawContext)(Object) this).drawItem(new ItemStack(Items.KNOWLEDGE_BOOK), x + width / 2 - 8, y + height / 2 - 8);
+*///? }
             return true;
         }
 
@@ -363,17 +363,17 @@ public abstract class DrawContextMixin {
 
         if (path.startsWith("recipe_book/slot_")) {
             boolean craftable = path.contains("craftable") && !path.contains("uncraftable");
-//#if MC >= 26
+//? if >= 26 {
             boolean many = path.contains("many");
-//#endif
+//? }
             int size = Math.max(16, Math.min(width, height) - 4);
             int cx = x + width / 2;
             int cy = y + height / 2;
-//#if MC >= 26
+//? if >= 26 {
             ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-            ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+            /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                     .dimensions(cx - size / 2 - 1, cy - size / 2 - 1, size, size)
                     .cornerRadius(5)
                     .hover(craftable ? 0.65f : 0f)
@@ -381,9 +381,9 @@ public abstract class DrawContextMixin {
                             .tint(0x000000, craftable ? 0.18f : 0.12f)
                             .shadow(0f, 0f, 0f, 0f)
                             .layer(3))
-//#if MC >= 26
+//? if >= 26 {
                     .screenSpace()
-//#endif
+//? }
                     .render();
             return true;
         }
@@ -393,20 +393,20 @@ public abstract class DrawContextMixin {
             int size = Math.min(24, Math.min(width, height));
             int cx = x + width / 2;
             int cy = y + height / 2;
-//#if MC >= 26
+//? if >= 26 {
             ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-            ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+            /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                     .dimensions(cx - size / 2, cy - size / 2, size, size)
                     .cornerRadius(size * 0.5f)
                     .hover(selected ? 1f : 0f)
                     .style(WidgetStyle.create()
                             .tint(0x000000, selected ? 0.22f : 0.12f)
                             .layer(selected ? 3 : 2))
-//#if MC >= 26
+//? if >= 26 {
                     .screenSpace()
-//#endif
+//? }
                     .render();
             return true;
         }
@@ -454,11 +454,11 @@ public abstract class DrawContextMixin {
         int thumbWidth = Math.max(5, Math.min(width, 8));
         int thumbHeight = Math.max(12, height);
         int cx = x + width / 2;
-//#if MC >= 26
+//? if >= 26 {
         ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-        ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+        /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                 .dimensions(cx - thumbWidth / 2, (int)Math.round(renderY), thumbWidth, thumbHeight)
                 .cornerRadius(thumbWidth * 0.5f)
                 .hover(0.7f)
@@ -466,9 +466,9 @@ public abstract class DrawContextMixin {
                         .tint(0x000000, 0.18f)
                         .fadeKey(scrollerKey)
                         .layer(4))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
     }
 
@@ -510,11 +510,11 @@ public abstract class DrawContextMixin {
     private void reglass$renderTradeArrowOutOfStock(int x, int y, int width, int height) {
         int arrowWidth = 20;
         int arrowHeight = 18;
-//#if MC >= 26
+//? if >= 26 {
         ((GuiGraphicsExtractor)(Object) this).blitSprite(
-//#else
-        ((DrawContext)(Object) this).drawGuiTexture(
-//#endif
+//? } else {
+        /*((DrawContext)(Object) this).drawGuiTexture(
+*///? }
                 RenderPipelines.GUI_TEXTURED,
                 VILLAGER_TRADE_ARROW_OUT_OF_STOCK,
                 x + (width - arrowWidth) / 2,
@@ -525,33 +525,33 @@ public abstract class DrawContextMixin {
 
     @Unique
     private void reglass$renderTextField(int x, int y, int width, int height, boolean highlighted) {
-//#if MC >= 26
+//? if >= 26 {
         ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-        ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+        /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                 .dimensions(x, y, width, height)
                 .cornerRadius(5)
                 .hover(highlighted ? 1f : 0f)
                 .style(WidgetStyle.create()
                         .tint(0x000000, 0.16f)
                         .layer(3))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
     }
 
     @Unique
     private void reglass$renderRecipeFilterIcon(String path, int x, int y, int width, int height) {
         String file = path.substring("recipe_book/".length());
-//#if MC >= 26
+//? if >= 26 {
         Identifier texture = Identifier.fromNamespaceAndPath("reglass", "textures/gui/recipe_book/filter_icons/" + file + ".png");
         ((GuiGraphicsExtractor)(Object) this).blit(
-//#else
-        Identifier texture = Identifier.of("reglass", "textures/gui/recipe_book/filter_icons/" + file + ".png");
+//? } else {
+        /*Identifier texture = Identifier.of("reglass", "textures/gui/recipe_book/filter_icons/" + file + ".png");
         ((DrawContext)(Object) this).drawTexture(
-//#endif
+*///? }
                 RenderPipelines.GUI_TEXTURED,
                 texture,
                 x,
@@ -568,20 +568,20 @@ public abstract class DrawContextMixin {
 
     @Unique
     private void reglass$renderRecipeFilterBackground(int x, int y, int width, int height, float hover) {
-//#if MC >= 26
+//? if >= 26 {
         ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-        ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+        /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                 .dimensions(x, y, width, height)
                 .cornerRadius(5)
                 .hover(hover)
                 .style(WidgetStyle.create()
                         .tint(0x000000, hover > 0f ? 0.20f : 0.12f)
                         .layer(3))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
     }
 
@@ -593,20 +593,20 @@ public abstract class DrawContextMixin {
         }
         int cx = x + width / 2;
         int cy = y + height / 2;
-//#if MC >= 26
+//? if >= 26 {
         ReGlassApi.create((GuiGraphicsExtractor)(Object) this)
-//#else
-        ReGlassApi.create((DrawContext)(Object) this)
-//#endif
+//? } else {
+        /*ReGlassApi.create((DrawContext)(Object) this)
+*///? }
                 .dimensions(cx - size / 2, cy - size / 2, size, size)
                 .cornerRadius(size * 0.5f)
                 .hover(hover)
                 .style(WidgetStyle.create()
                         .tint(0x000000, hover > 0f ? 0.20f : 0.12f)
                         .layer(layer))
-//#if MC >= 26
+//? if >= 26 {
                 .screenSpace()
-//#endif
+//? }
                 .render();
     }
 }

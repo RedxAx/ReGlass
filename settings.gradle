@@ -6,6 +6,10 @@ pluginManagement {
 		}
 		mavenCentral()
 		gradlePluginPortal()
+		maven {
+			url = "https://maven.kikugie.dev/snapshots"
+			name = "KikuGie Snapshots"
+		}
 	}
 }
 
@@ -16,6 +20,10 @@ plugins {
 rootProject.name = 'ReGlass'
 
 stonecutter {
+	// Enable Groovy DSL, as Stonecutter uses Kotlin by default
+	kotlinController = false
+	centralScript = "build.gradle"
+
 	create(getRootProject()) {
 		versions '26.2', '26.1', '1.21.11'
 	}

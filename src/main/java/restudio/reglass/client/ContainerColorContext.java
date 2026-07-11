@@ -1,10 +1,10 @@
 package restudio.reglass.client;
 
-//#if MC >= 26
+//? if >= 26 {
 import net.minecraft.world.item.DyeColor;
-//#else
-import net.minecraft.util.DyeColor;
-//#endif
+//? } else {
+/*import net.minecraft.util.DyeColor;
+*///? }
 
 public final class ContainerColorContext {
     private static DyeColor lastShulkerColor;

@@ -52,9 +52,7 @@ dependencies {
 
 sourceSets {
 	main {
-		def generatedJava = layout.buildDirectory.dir("generated/reglass/main/java")
 		def generatedResources = layout.buildDirectory.dir("generated/reglass/main/resources")
-		java.setSrcDirs(files(generatedJava))
 		resources.setSrcDirs(files(generatedResources))
 		if (!project.minecraft_version.startsWith("1.")) {
 			java {
@@ -163,18 +161,12 @@ def preprocessReglassTree = { File input, File output, String minecraftVersion -
 }
 
 def preprocessReglassSources = tasks.register('preprocessReglassSources') {
-	def generatedJava = layout.buildDirectory.dir("generated/reglass/main/java")
 	def generatedResources = layout.buildDirectory.dir("generated/reglass/main/resources")
-	inputs.dir(rootProject.file('src/main/java'))
 	inputs.dir(rootProject.file('src/main/resources'))
-	outputs.dir(generatedJava)
 	outputs.dir(generatedResources)
 	doLast {
-		def javaOutput = generatedJava.get().asFile
 		def resourcesOutput = generatedResources.get().asFile
-		javaOutput.deleteDir()
 		resourcesOutput.deleteDir()
-		preprocessReglassTree(rootProject.file('src/main/java'), javaOutput, project.minecraft_version)
 		preprocessReglassTree(rootProject.file('src/main/resources'), resourcesOutput, project.minecraft_version)
 	}
 }
