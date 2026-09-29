@@ -1,10 +1,26 @@
 package restudio.reglass.client;
 
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+//#else
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//#endif
 //#if MC >= 26.2
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+//#else
 import com.mojang.blaze3d.PrimitiveTopology;
+//#endif
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.BindGroupLayout;
+//#else
 import com.mojang.blaze3d.pipeline.BindGroupLayout;
+//#endif
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+//#else
 import com.mojang.blaze3d.pipeline.ColorTargetState;
+//#endif
 //#elseif MC >= 26
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.platform.CompareOp;
@@ -12,9 +28,17 @@ import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 //#endif
 import com.mojang.blaze3d.systems.RenderSystem;
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+//#else
 import com.mojang.blaze3d.vertex.VertexFormat;
+//#endif
 //#if MC >= 26
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.UniformType;
+//#else
 import com.mojang.blaze3d.shaders.UniformType;
+//#endif
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.resources.Identifier;
 //#else
@@ -49,12 +73,36 @@ public final class LiquidGlassPipelines {
                                     .withUniform("CustomUniforms", UniformType.UNIFORM_BUFFER)
                                     .withUniform("WidgetInfo", UniformType.UNIFORM_BUFFER)
                                     .withUniform("BgConfig", UniformType.UNIFORM_BUFFER)
+//#if MC >= 26.3
+                                    .withUniform("Sampler0", UniformType.COMBINED_IMAGE_SAMPLER)
+//#else
                                     .withSampler("Sampler0")
+//#endif
+//#if MC >= 26.3
+                                    .withUniform("Sampler1", UniformType.COMBINED_IMAGE_SAMPLER)
+//#else
                                     .withSampler("Sampler1")
+//#endif
+//#if MC >= 26.3
+                                    .withUniform("Sampler2", UniformType.COMBINED_IMAGE_SAMPLER)
+//#else
                                     .withSampler("Sampler2")
+//#endif
+//#if MC >= 26.3
+                                    .withUniform("Sampler3", UniformType.COMBINED_IMAGE_SAMPLER)
+//#else
                                     .withSampler("Sampler3")
+//#endif
+//#if MC >= 26.3
+                                    .withUniform("Sampler4", UniformType.COMBINED_IMAGE_SAMPLER)
+//#else
                                     .withSampler("Sampler4")
+//#endif
+//#if MC >= 26.3
+                                    .withUniform("Sampler5", UniformType.COMBINED_IMAGE_SAMPLER)
+//#else
                                     .withSampler("Sampler5")
+//#endif
                                     .build()
                     )
                     .withVertexBinding(0, DefaultVertexFormat.POSITION)
@@ -86,7 +134,11 @@ public final class LiquidGlassPipelines {
 
             LIQUID_GLASS_GUI = b.build();
 //#if MC >= 26.2
+//#if MC >= 26.3
+            RenderSystem.getCompiledPipeline(LIQUID_GLASS_GUI);
+//#else
             RenderSystem.getDevice().precompilePipeline(LIQUID_GLASS_GUI);
+//#endif
 //#else
             RenderSystem.getDevice().precompilePipeline(LIQUID_GLASS_GUI, null);
 //#endif

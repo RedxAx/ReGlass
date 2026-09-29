@@ -1,6 +1,10 @@
 package restudio.reglass.client;
 
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+//#else
 import com.mojang.blaze3d.buffers.GpuBuffer;
+//#endif
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -22,11 +26,17 @@ import net.minecraft.util.math.ColorHelper;
 //#endif
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+//#if MC >= 26.3
+import org.lwjgl.sdl.SDLTimer;
+//#else
 import org.lwjgl.glfw.GLFW;
+//#endif
 import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.api.WidgetStyle;
 import restudio.reglass.client.gui.LiquidGlassGuiElementRenderState;
 import restudio.reglass.client.runtime.ReGlassAnim;
+import restudio.reglass.client.runtime.GlassRenderBounds;
+import restudio.reglass.client.runtime.GlassRenderBounds.Bounds;
 //#if MC < 26
 import restudio.reglass.mixin.accessor.GuiRenderStateAccessor;
 //#endif
@@ -88,7 +98,7 @@ public final class LiquidGlassUniforms {
         int customUniformsSize = calc.get();
         customUniforms = RenderSystem.getDevice().createBuffer(() -> "reglass CustomUniforms", 130, customUniformsSize);
 
-        int widgetInfoSize = 16 + MAX_LAYERS * 16 + MAX_WIDGETS * (16 * 12);
+        int widgetInfoSize = 16 + MAX_LAYERS * 32 + MAX_WIDGETS * (16 * 13);
         widgetInfo = RenderSystem.getDevice().createBuffer(() -> "reglass WidgetInfo", 130, widgetInfoSize);
 
         Std140SizeCalculator bcalc = new Std140SizeCalculator();
@@ -142,8 +152,12 @@ public final class LiquidGlassUniforms {
         double[] mx = new double[1];
         double[] my = new double[1];
 //#if MC >= 26
+//#if MC >= 26.3
+        mx[0] = mc.mouseHandler.xpos();
+        my[0] = mc.mouseHandler.ypos();
+//#else
         GLFW.glfwGetCursorPos(mc.getWindow().handle(), mx, my);
-        float scale = (float) mc.getWindow().getGuiScale();
+//#endif
 //#if MC >= 26.2
         int fbH = mc.gameRenderer.mainRenderTarget().height;
 //#else
@@ -151,11 +165,14 @@ public final class LiquidGlassUniforms {
 //#endif
 //#else
         GLFW.glfwGetCursorPos(mc.getWindow().getHandle(), mx, my);
-        float scale = (float) mc.getWindow().getScaleFactor();
         int fbH = mc.getFramebuffer().textureHeight;
 //#endif
 
+//#if MC >= 26.3
+        float time = SDLTimer.SDL_GetTicks() / 1000.0f;
+//#else
         float time = (float) GLFW.glfwGetTime();
+//#endif
         ReGlassConfig config = ReGlassConfig.INSTANCE;
 
 //#if MC >= 26.2
@@ -166,8 +183,13 @@ public final class LiquidGlassUniforms {
             Std140Builder b = Std140Builder.intoBuffer(map.data());
             b.putFloat(time);
             b.align(16);
-            float x = (float) (mx[0] * scale);
-            float y = fbH - (float) (my[0] * scale);
+//#if MC >= 26
+            float x = (float) (mx[0] * outW / Math.max(1, mc.getWindow().getScreenWidth()));
+            float y = fbH - (float) (my[0] * fbH / Math.max(1, mc.getWindow().getScreenHeight()));
+//#else
+            float x = (float) (mx[0] * outW / Math.max(1, mc.getWindow().getWidth()));
+            float y = fbH - (float) (my[0] * fbH / Math.max(1, mc.getWindow().getHeight()));
+//#endif
             b.putVec4(new Vector4f(x, y, 0f, 0f));
             b.putFloat(this.screenWantsBlur ? 1.0f : 0.0f);
             b.align(16);
@@ -321,6 +343,49 @@ public final class LiquidGlassUniforms {
         try (var map = RenderSystem.getDevice().createCommandEncoder().mapBuffer(widgetInfo, false, true)) {
 //#endif
             Std140Builder b = Std140Builder.intoBuffer(map.data());
+            Bounds[] shapeBounds = new Bounds[renderWidgets.size()];
+            Bounds[] shadowBounds = new Bounds[renderWidgets.size()];
+            Bounds[] layerBounds = new Bounds[MAX_LAYERS];
+            float[] smoothSum = new float[MAX_LAYERS];
+            float[] smoothMax = new float[MAX_LAYERS];
+            for (var w : renderWidgets) {
+                int layer = Math.max(0, Math.min(MAX_LAYERS - 1, w.style().getLayer()));
+                float smoothing = Math.abs(w.style().getSmoothing());
+                smoothSum[layer] += smoothing;
+                smoothMax[layer] = Math.max(smoothMax[layer], smoothing);
+            }
+            for (int i = 0; i < renderWidgets.size(); i++) {
+                var w = renderWidgets.get(i);
+                var style = w.style();
+                int layer = Math.max(0, Math.min(MAX_LAYERS - 1, style.getLayer()));
+                float x = w.x1() * scale;
+                float y = fbH - w.y2() * scale;
+                float width = (w.x2() - w.x1()) * scale;
+                float height = (w.y2() - w.y1()) * scale;
+                // Smooth unions can extend by k/4 per operation; subtraction may extend by k.
+                float padding = (smoothMax[layer] + smoothSum[layer] * 0.25f + 0.011f) * fbH
+                        + Math.abs(ReGlassAnim.INSTANCE.hoverScalePx()) + Math.abs(ReGlassAnim.INSTANCE.focusScalePx());
+                Bounds scissor = null;
+                var sc = w.scissorArea();
+                if (sc != null) {
+//#if MC >= 26
+                    scissor = new Bounds(sc.left() * scale, fbH - sc.bottom() * scale,
+                            sc.right() * scale, fbH - sc.top() * scale);
+//#else
+                    scissor = new Bounds(sc.getLeft() * scale, fbH - sc.getBottom() * scale,
+                            sc.getRight() * scale, fbH - sc.getTop() * scale);
+//#endif
+                }
+                Bounds shape = GlassRenderBounds.shape(x, y, width, height, padding);
+                Bounds shadow = GlassRenderBounds.shadow(x, y, width, height, style.getShadowExpand(),
+                        style.getShadowFactor(), style.getShadowColorAlpha(),
+                        style.getShadowOffsetX() * scale, style.getShadowOffsetY() * scale);
+                if (scissor != null) { shape = shape.clip(scissor); shadow = shadow.clip(scissor); }
+                shapeBounds[i] = shape;
+                shadowBounds[i] = shadow;
+                Bounds footprint = shape.union(shadow);
+                layerBounds[layer] = layerBounds[layer] == null ? footprint : layerBounds[layer].union(footprint);
+            }
             b.putFloat((float) renderWidgets.size());
             b.align(16);
 
@@ -331,6 +396,11 @@ public final class LiquidGlassUniforms {
 //#else
                 b.putVec4((float) layerStarts[i], (float) layerCounts[i], 0f, 0f);
 //#endif
+            }
+
+            for (Bounds bounds : layerBounds) {
+                if (bounds == null || bounds.empty()) b.putVec4(0f, 0f, 0f, 0f);
+                else b.putVec4(bounds.left(), bounds.bottom(), bounds.right(), bounds.top());
             }
 
             for (int i = 0; i < MAX_WIDGETS; i++) {
@@ -463,7 +533,10 @@ public final class LiquidGlassUniforms {
                     long key = s.hasFadeKey() ? s.getFadeKey() : rectKey(w.x1(), w.y1(), w.x2(), w.y2());
                     FadeState fs = fades.computeIfAbsent(key, k -> new FadeState());
                     fs.hover = smoothToward(fs.hover, Math.max(0f, Math.min(1f, w.hover())), dtSeconds, 0.12f);
-                    fs.focus = smoothToward(fs.focus, Math.max(0f, Math.min(1f, w.focus())), dtSeconds, 0.18f);
+                    float targetFocus = Math.max(0f, Math.min(1f, w.focus()));
+                    float responseSpeed = Math.max(0.5f, ReGlassConfig.INSTANCE.focusBorderSpeed);
+                    fs.focus = smoothToward(fs.focus, targetFocus, dtSeconds,
+                            (targetFocus > fs.focus ? 0.06f : 0.18f) / responseSpeed);
 //#if MC >= 26
                     b.putVec4((float) idx, fs.hover, fs.focus, (float) s.getLayer());
 //#else
@@ -472,6 +545,14 @@ public final class LiquidGlassUniforms {
                     b.putVec4((float) idx, fs.hover, fs.focus, seed);
 //#endif
                 } else b.putVec4(0f, 0f, 0f, 0f);
+            }
+            for (Bounds[] boundsArray : new Bounds[][] {shapeBounds, shadowBounds}) {
+                for (int i = 0; i < MAX_WIDGETS; i++) {
+                    if (i < boundsArray.length && !boundsArray[i].empty()) {
+                        Bounds bounds = boundsArray[i];
+                        b.putVec4(bounds.left(), bounds.bottom(), bounds.right(), bounds.top());
+                    } else b.putVec4(0f, 0f, 0f, 0f);
+                }
             }
         }
     }
@@ -484,4 +565,3 @@ public final class LiquidGlassUniforms {
     public GpuBuffer getBgConfigBuffer() { return bgConfig; }
     public List<Integer> getUsedBlurRadiiOrdered() { return usedBlurRadiiOrdered; }
 }
-

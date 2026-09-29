@@ -28,7 +28,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 //#endif
+//#if MC < 26.3
 import org.lwjgl.glfw.GLFW;
+//#endif
+import restudio.reglass.client.runtime.PlatformInput;
 import restudio.reglass.client.api.ReGlassConfig;
 import restudio.reglass.client.api.WidgetStyle;
 import restudio.reglass.client.config.ReGlassSettingsIO;
@@ -147,14 +150,16 @@ public class ReGlassClient implements ClientModInitializer {
 //#if MC >= 26
         InputConstants.Key key = InputConstants.getKey(keyMapping.saveString());
         if (key.getType() == InputConstants.Type.MOUSE) {
-            return GLFW.glfwGetMouseButton(client.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
+            return PlatformInput.isMouseButtonDown(key.getValue());
 //#else
         InputUtil.Key key = InputUtil.fromTranslationKey(keyBinding.getBoundKeyTranslationKey());
         if (key.getCategory() == InputUtil.Type.MOUSE) {
             return GLFW.glfwGetMouseButton(client.getWindow().getHandle(), key.getCode()) == GLFW.GLFW_PRESS;
 //#endif
         }
-//#if MC >= 26
+//#if MC >= 26.3
+        return InputConstants.isKeyDown(key.getValue());
+//#elseif MC >= 26
         return InputConstants.isKeyDown(client.getWindow(), key.getValue());
 //#else
         return InputUtil.isKeyPressed(client.getWindow(), key.getCode());
@@ -218,7 +223,7 @@ public class ReGlassClient implements ClientModInitializer {
 //#else
         public boolean mouseClicked(Click click, boolean isDouble) {
 //#endif
-            if (click.button() == 1) {
+            if (click.button() == PlatformInput.RIGHT_MOUSE_BUTTON) {
 //#if MC >= 26
                 addRenderableWidget(new LiquidGlassWidget((int) click.x() - 50, (int) click.y() - 50, 100, 100, WidgetStyle.create().smoothing(.05f))).setMoveable(true);
 //#else

@@ -1,6 +1,10 @@
 package restudio.reglass.mixin.widgets;
 
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+//#else
 import com.mojang.blaze3d.buffers.GpuBuffer;
+//#endif
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;

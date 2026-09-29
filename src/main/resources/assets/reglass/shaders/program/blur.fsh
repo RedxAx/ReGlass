@@ -1,4 +1,8 @@
+//#if MC >= 26.3
+#version 450
+//#else
 #version 150
+//#endif
 
 uniform sampler2D DiffuseSampler;
 
@@ -12,8 +16,16 @@ layout(std140) uniform Config {
     float Weights[65];
 };
 
+//#if MC >= 26.3
+layout(location = 0) in vec2 texCoord;
+//#else
 in vec2 texCoord;
+//#endif
+//#if MC >= 26.3
+layout(location = 0) out vec4 fragColor;
+//#else
 out vec4 fragColor;
+//#endif
 
 void main() {
     int radius = int(Params.z + 0.5);

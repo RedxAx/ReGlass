@@ -1,4 +1,8 @@
+//#if MC >= 26.3
+#version 450
+//#else
 #version 150
+//#endif
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
@@ -32,6 +36,7 @@ layout(std140) uniform CustomUniforms {
 layout(std140) uniform WidgetInfo {
     float Count;
     vec4 LayerRanges[16];
+    vec4 LayerBounds[16];
     vec4 Rects[MAX_WIDGETS];
     vec4 Rads[MAX_WIDGETS];
     vec4 Tints[MAX_WIDGETS];
@@ -43,6 +48,8 @@ layout(std140) uniform WidgetInfo {
     vec4 Shadow0[MAX_WIDGETS];
     vec4 ShadowColor[MAX_WIDGETS];
     vec4 Extra0[MAX_WIDGETS];
+    vec4 ShapeBounds[MAX_WIDGETS];
+    vec4 ShadowBounds[MAX_WIDGETS];
 };
 
 layout(std140) uniform BgConfig {
@@ -51,9 +58,17 @@ layout(std140) uniform BgConfig {
     vec2 ShadowOffset;
 };
 
+//#if MC >= 26.3
+layout(location = 0) out vec4 fragColor;
+//#else
 out vec4 fragColor;
+//#endif
 
 struct SDFResult { float dist; vec2 normal; float aspect; int index; };
+
+bool outsideBounds(vec2 coord, vec4 bounds) {
+    return coord.x < bounds.x || coord.y < bounds.y || coord.x > bounds.z || coord.y > bounds.w;
+}
 
 vec2 screenToUV(vec2 screen, vec2 res) {
     return (screen.xy - 0.5 * res.xy) / res.y;
@@ -116,6 +131,7 @@ SDFResult fieldWidgets(vec2 p, vec2 inSize, vec2 fragCoord, float layer) {
         int wi = start + i;
         if (wi >= n) break;
         if (Smoothings[wi].x < 0.0) continue;
+        if (DebugStep > 1.5 && outsideBounds(fragCoord, ShapeBounds[wi])) continue;
 
         vec4 sc = ScissorRects[wi];
         if (fragCoord.x < sc.x || fragCoord.y < sc.y || fragCoord.x > sc.z || fragCoord.y > sc.w) continue;
@@ -130,7 +146,7 @@ SDFResult fieldWidgets(vec2 p, vec2 inSize, vec2 fragCoord, float layer) {
         vec3 g = sdgBox(p - c, b, rad);
 
         vec4 extra = Extra0[wi];
-        float scaleOff = (HoverScalePx * extra.y + FocusScalePx * extra.z) / inSize.y;
+        float scaleOff = (HoverScalePx * 0.18 * extra.y + min(FocusScalePx, 4.0) * 0.4 * extra.z) / inSize.y;
         float dist = g.x - scaleOff;
 
         float aspect = min(rc.z, rc.w) / max(rc.z, rc.w);
@@ -205,11 +221,14 @@ void main() {
         int start = int(layerRange.x + 0.5);
         int count = int(layerRange.y + 0.5);
         if (count <= 0) continue;
+        if (outsideBounds(coord, LayerBounds[l])) continue;
 
         for (int i = 0; i < MAX_WIDGETS; i++) {
             if (i >= count) break;
             int wi = start + i;
             if (wi >= n) break;
+
+            if (outsideBounds(coord, ShadowBounds[wi])) continue;
 
             vec4 sc = ScissorRects[wi];
             if (coord.x < sc.x || coord.y < sc.y || coord.x > sc.z || coord.y > sc.w) continue;
@@ -248,7 +267,6 @@ void main() {
 
             vec4 o0 = Optics0[idx];
             vec4 o1 = Optics1[idx];
-            vec4 o2 = Optics2[idx];
             vec4 tint = Tints[idx];
             vec4 extra = Extra0[idx];
 
@@ -301,41 +319,20 @@ void main() {
             vec3 glareMix = mix(blurred.rgb, tint.rgb, tint.a * 0.5);
             outColor.rgb = mix(outColor.rgb, glareMix, 0.25 * glareGeo * nlen);
 
-            float edgeProx = exp(-abs(merged) * inSize.y / 9.0);
-
-            if (hoverK > 0.0001) {
-                vec2 tdir = normalize(vec2(-normal.y, normal.x));
-                float refBoost = 1.0 + 0.35 * hoverK * edgeProx;
-                vec2 refrHover = -normal * edgeFactor * 0.08 * refBoost * vec2(inSize.y / inSize.x, 1.0);
-                vec2 chromaT = tdir * 0.0008 * hoverK * edgeProx * vec2(inSize.y / inSize.x, 1.0);
-                vec3 subtle = vec3(
-                    sampleBlur(blurIndex, uvPix + refrHover + chromaT).r,
-                    sampleBlur(blurIndex, uvPix + refrHover).g,
-                    sampleBlur(blurIndex, uvPix + refrHover - chromaT).b
-                );
-                vec3 add = mix(subtle, vec3(1.0), 0.08) * (0.15 + 0.35 * edgeProx) * hoverK;
-                outColor.rgb = clamp(outColor.rgb + add, 0.0, 1.0);
-            }
-
-            if (focusK > 0.0001) {
+            if (hoverK > 0.0001 || focusK > 0.0001) {
                 vec4 rc = Rects[idx];
-                vec2 centerPx = vec2(rc.x + 0.5 * rc.z, rc.y + 0.5 * rc.w);
-                vec2 v = (coord - centerPx) / inSize.y;
-
-                float phi = atan(v.y, v.x);
-                float phi0 = Time * FocusBorderSpeed;
-                float c = 0.5 + 0.5 * cos(phi - phi0);
-                float sweep = smoothstep(0.75, 1.0, c);
-
-                float mergedPx = merged * inSize.y;
-                float w = max(FocusBorderWidthPx, 1e-3);
-                float outside = step(0.0, mergedPx);
-                float band = exp(-pow(max(0.0, mergedPx) / w, 2.0)) * outside;
-
-                float intensity = FocusBorderIntensity * focusK;
-                vec3 ringTint = mix(vec3(1.0), tint.rgb, 0.2);
-                vec3 ring = ringTint * (band * sweep) * intensity;
-                outColor.rgb = clamp(outColor.rgb + ring, 0.0, 1.0);
+                vec2 pointer = clamp(Mouse.xy, rc.xy, rc.xy + rc.zw);
+                float glowRadius = max(min(rc.z, rc.w) * 1.7, 1.0);
+                vec2 pointerDistance = (coord - pointer) / glowRadius;
+                float glow = exp(-dot(pointerDistance, pointerDistance) * 2.5);
+                float rim = exp(-max(-merged * inSize.y, 0.0) / max(FocusBorderWidthPx, 0.8));
+                vec2 lightDirection = normalize(RIM_LIGHT_VEC.xy + vec2(1e-5));
+                float specular = pow(max(dot(normal, lightDirection), 0.0), 2.0);
+                float strength = clamp(FocusBorderIntensity, 0.0, 1.0);
+                float illumination = 0.025 * hoverK * glow
+                        + strength * focusK * (0.065 * glow + 0.12 * rim * specular);
+                vec3 lightTint = mix(vec3(1.0), tint.rgb, tint.a * 0.15);
+                outColor.rgb = mix(outColor.rgb, lightTint, clamp(illumination, 0.0, 0.16));
             }
 
             float aa = smoothstep(0.001, -0.001, merged);

@@ -1,6 +1,10 @@
 package restudio.reglass.mixin.widgets;
 
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+//#else
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//#endif
 //#if MC >= 26
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -66,9 +70,17 @@ public abstract class DrawContextMixin {
         LiquidGlassUniforms.get().setScreenWantsBlur(true);
     }
 
+//#if MC >= 26.3
+    @Inject(method = "blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
+//#else
     @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawGuiTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIII)V",
 //#else
     @Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
     private void onDrawTexture(RenderPipeline pipeline, Identifier sprite, int x, int y, int width, int height, int color, CallbackInfo ci) {
@@ -106,9 +118,17 @@ public abstract class DrawContextMixin {
     }
 
 //#if MC >= 26
+//#if MC >= 26.3
+    @Inject(method = "blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V",
+//#else
     @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawGuiTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V",
 //#else
     @Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
     private void reglass$onDrawSprite(RenderPipeline pipeline, Identifier sprite, int x, int y, int width, int height, CallbackInfo ci) {
@@ -118,9 +138,17 @@ public abstract class DrawContextMixin {
     }
 
 //#if MC >= 26
+//#if MC >= 26.3
+    @Inject(method = "blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIII)V",
+//#else
     @Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIIIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawGuiTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIIIIII)V",
 //#else
     @Inject(method = "drawGuiTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIIIIIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
     private void reglass$onDrawSlicedSprite(RenderPipeline pipeline, Identifier sprite, int spriteWidth, int spriteHeight, int u, int v, int x, int y, int width, int height, CallbackInfo ci) {
@@ -131,9 +159,17 @@ public abstract class DrawContextMixin {
     }
 
 //#if MC >= 26
+//#if MC >= 26.3
+    @Inject(method = "blit(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIII)V",
+//#else
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIII)V",
 //#else
     @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
 //#if MC >= 26
@@ -147,9 +183,17 @@ public abstract class DrawContextMixin {
     }
 
 //#if MC >= 26
+//#if MC >= 26.3
+    @Inject(method = "blit(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIII)V",
+//#else
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIII)V",
 //#else
     @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
 //#if MC >= 26
@@ -167,9 +211,17 @@ public abstract class DrawContextMixin {
     }
 
 //#if MC >= 26
+//#if MC >= 26.3
+    @Inject(method = "blit(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIII)V",
+//#else
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIII)V",
 //#else
     @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
 //#if MC >= 26
@@ -187,9 +239,17 @@ public abstract class DrawContextMixin {
     }
 
 //#if MC >= 26
+//#if MC >= 26.3
+    @Inject(method = "blit(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIIII)V",
+//#else
     @Inject(method = "blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIIIII)V",
+//#endif
+//#else
+//#if MC >= 26.3
+    @Inject(method = "drawTexture(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
 //#else
     @Inject(method = "drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
+//#endif
 //#endif
             at = @At("HEAD"), cancellable = true)
 //#if MC >= 26

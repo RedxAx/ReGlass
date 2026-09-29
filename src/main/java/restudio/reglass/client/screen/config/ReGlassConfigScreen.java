@@ -268,27 +268,27 @@ public class ReGlassConfigScreen extends Screen {
 //#endif
         y += widgetHeight + gap;
 //#if MC >= 26
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Focus Scale (px)"), 0f, 8f, cfg.focusScalePx, v -> cfg.focusScalePx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Press Flex (px)"), 0f, 8f, cfg.focusScalePx, v -> cfg.focusScalePx = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#else
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Scale (px)"), 0f, 8f, cfg.focusScalePx, v -> cfg.focusScalePx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Press Flex (px)"), 0f, 8f, cfg.focusScalePx, v -> cfg.focusScalePx = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#endif
         y += widgetHeight + gap;
 //#if MC >= 26
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Focus Border Width (px)"), 0f, 6f, cfg.focusBorderWidthPx, v -> cfg.focusBorderWidthPx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Press Rim Width (px)"), 0f, 6f, cfg.focusBorderWidthPx, v -> cfg.focusBorderWidthPx = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#else
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Border Width (px)"), 0f, 6f, cfg.focusBorderWidthPx, v -> cfg.focusBorderWidthPx = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Press Rim Width (px)"), 0f, 6f, cfg.focusBorderWidthPx, v -> cfg.focusBorderWidthPx = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#endif
         y += widgetHeight + gap;
 //#if MC >= 26
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Focus Border Intensity"), 0f, 1f, cfg.focusBorderIntensity, v -> cfg.focusBorderIntensity = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Press Light Strength"), 0f, 1f, cfg.focusBorderIntensity, v -> cfg.focusBorderIntensity = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#else
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Border Intensity"), 0f, 1f, cfg.focusBorderIntensity, v -> cfg.focusBorderIntensity = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Press Light Strength"), 0f, 1f, cfg.focusBorderIntensity, v -> cfg.focusBorderIntensity = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#endif
         y += widgetHeight + gap;
 //#if MC >= 26
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Focus Border Speed"), 0f, 4f, cfg.focusBorderSpeed, v -> cfg.focusBorderSpeed = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Component.literal("Press Response Speed"), 0f, 4f, cfg.focusBorderSpeed, v -> cfg.focusBorderSpeed = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#else
-        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Focus Border Speed"), 0f, 4f, cfg.focusBorderSpeed, v -> cfg.focusBorderSpeed = v.floatValue()), y).active = cfg.features.enableRedesign;
+        addSlider(MappedSlider.floatSlider(widgetX, y, widgetWidth, widgetHeight, Text.literal("Press Response Speed"), 0f, 4f, cfg.focusBorderSpeed, v -> cfg.focusBorderSpeed = v.floatValue()), y).active = cfg.features.enableRedesign;
 //#endif
         y += widgetHeight + gap * 2;
 

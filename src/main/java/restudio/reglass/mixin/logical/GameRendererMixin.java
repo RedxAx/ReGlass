@@ -1,17 +1,41 @@
 package restudio.reglass.mixin.logical;
 
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+//#else
 import com.mojang.blaze3d.buffers.GpuBuffer;
+//#endif
 //#if MC >= 26
 import com.mojang.blaze3d.pipeline.RenderTarget;
 //#endif
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+//#else
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//#endif
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.commands.RenderPass;
+//#else
 import com.mojang.blaze3d.systems.RenderPass;
+//#endif
 import com.mojang.blaze3d.systems.RenderSystem;
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.textures.FilterMode;
+//#else
 import com.mojang.blaze3d.textures.FilterMode;
+//#endif
 //#if MC >= 26.2
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+//#else
 import com.mojang.blaze3d.PrimitiveTopology;
 //#endif
+//#endif
+//#if MC >= 26.3
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+//#else
 import com.mojang.blaze3d.vertex.VertexFormat;
+//#endif
 import java.util.List;
 import java.util.OptionalDouble;
 //#if MC >= 26.2
@@ -111,14 +135,22 @@ public abstract class GameRendererMixin {
                     OptionalInt.empty(),
 //#endif
 //#if MC >= 26
+//#if MC >= 26.3
+                    mainFb.hasDepth() ? mainFb.getDepthTextureView() : null,
+//#else
                     mainFb.useDepth ? mainFb.getDepthTextureView() : null,
+//#endif
 //#else
                     mainFb.useDepthAttachment ? mainFb.getDepthAttachmentView() : null,
 //#endif
                     OptionalDouble.empty()
             )) {
                 RenderPipeline pipeline = LiquidGlassPipelines.getGuiPipeline();
+//#if MC >= 26.3
+                pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
+//#else
                 pass.setPipeline(pipeline);
+//#endif
 
 //#if MC < 26.2
                 RenderSystem.bindDefaultUniforms(pass);
@@ -128,22 +160,26 @@ public abstract class GameRendererMixin {
                 pass.setUniform("WidgetInfo", uniforms.getWidgetInfoBuffer());
                 pass.setUniform("BgConfig", uniforms.getBgConfigBuffer());
 //#if MC >= 26
-                pass.bindTexture("Sampler0", mainFb.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+//#if MC >= 26.3
+                pass.setUniform("Sampler0", LiquidGlassPrecomputeRuntime.get().getLiveBackdropView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
 //#else
-                pass.bindTexture("Sampler0", mainFb.getColorAttachmentView(), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
+                pass.bindTexture("Sampler0", LiquidGlassPrecomputeRuntime.get().getLiveBackdropView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+//#endif
+//#else
+                pass.bindTexture("Sampler0", LiquidGlassPrecomputeRuntime.get().getLiveBackdropView(), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
 //#endif
 
                 GuiRenderer guiRenderer = ((GameRendererAccessor) this).getGuiRenderer();
                 GpuBuffer quadVB = ((QuadVertexBufferProvider) guiRenderer).getQuadVertexBuffer();
 //#if MC >= 26.2
                 RenderSystem.AutoStorageIndexBuffer quadIBInfo = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-                com.mojang.blaze3d.buffers.GpuBuffer quadIB = quadIBInfo.getBuffer(6);
+                GpuBuffer quadIB = quadIBInfo.getBuffer(6);
 //#elseif MC >= 26
                 RenderSystem.AutoStorageIndexBuffer quadIBInfo = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-                com.mojang.blaze3d.buffers.GpuBuffer quadIB = quadIBInfo.getBuffer(6);
+                GpuBuffer quadIB = quadIBInfo.getBuffer(6);
 //#else
                 RenderSystem.ShapeIndexBuffer quadIBInfo = RenderSystem.getSequentialBuffer(VertexFormat.DrawMode.QUADS);
-                com.mojang.blaze3d.buffers.GpuBuffer quadIB = quadIBInfo.getIndexBuffer(6);
+                GpuBuffer quadIB = quadIBInfo.getIndexBuffer(6);
 //#endif
 //#if MC >= 26.2
                 pass.setVertexBuffer(0, quadVB.slice());
@@ -166,23 +202,28 @@ public abstract class GameRendererMixin {
                     if (i < radii.size()) {
                         int r = radii.get(i);
 //#if MC >= 26
-                        if (r <= 0) pass.bindTexture(samplerName, mainFb.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-                        else pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+//#if MC >= 26.3
+                            pass.setUniform(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
 //#else
-                        if (r <= 0) pass.bindTexture(samplerName, mainFb.getColorAttachmentView(), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
-                        else pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
+                            pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+//#endif
+//#else
+                            pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
 //#endif
                     } else {
                         if (!radii.isEmpty()) {
                             int r0 = radii.getFirst();
 //#if MC >= 26
-                            if (r0 <= 0) pass.bindTexture(samplerName, mainFb.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-                            else pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r0), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-                        } else pass.bindTexture(samplerName, mainFb.getColorTextureView(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+//#if MC >= 26.3
+                            pass.setUniform(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r0), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+                        } else pass.setUniform(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(0), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
 //#else
-                            if (r0 <= 0) pass.bindTexture(samplerName, mainFb.getColorAttachmentView(), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
-                            else pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r0), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
-                        } else pass.bindTexture(samplerName, mainFb.getColorAttachmentView(), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
+                            pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r0), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+                        } else pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(0), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+//#endif
+//#else
+                            pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(r0), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
+                        } else pass.bindTexture(samplerName, LiquidGlassPrecomputeRuntime.get().getBlurredViewForRadius(0), RenderSystem.getSamplerCache().get(FilterMode.LINEAR));
 //#endif
                     }
                 }
@@ -193,5 +234,10 @@ public abstract class GameRendererMixin {
 //#endif
             }
         }
+    }
+
+    @Inject(method = "close", at = @At("HEAD"))
+    private void reglass$closeSamplingResources(CallbackInfo ci) {
+        LiquidGlassPrecomputeRuntime.get().close();
     }
 }

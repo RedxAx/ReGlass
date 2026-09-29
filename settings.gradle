@@ -17,6 +17,6 @@ rootProject.name = 'ReGlass'
 
 stonecutter {
 	create(getRootProject()) {
-		versions '26.2', '26.1', '1.21.11'
+		versions '26.3', '26.2', '26.1', '1.21.11'
 	}
 }

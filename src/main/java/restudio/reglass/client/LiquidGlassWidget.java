@@ -1,5 +1,7 @@
 package restudio.reglass.client;
 
+import restudio.reglass.client.runtime.PlatformInput;
+
 //#if MC >= 26
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -65,7 +67,7 @@ public class LiquidGlassWidget extends ClickableWidget {
     public boolean mouseClicked(Click click, boolean isDouble) {
 //#endif
         if (!this.moveable) return super.mouseClicked(click, isDouble);
-        if (click.button() == 0 && click.x() >= this.getX() && click.x() < this.getX() + this.getWidth() && click.y() >= this.getY() && click.y() < this.getY() + this.getHeight()) {
+        if (click.button() == PlatformInput.LEFT_MOUSE_BUTTON && click.x() >= this.getX() && click.x() < this.getX() + this.getWidth() && click.y() >= this.getY() && click.y() < this.getY() + this.getHeight()) {
             this.dragging = true;
             this.dragOffsetX = (int) (click.x() - this.getX());
             this.dragOffsetY = (int) (click.y() - this.getY());
@@ -80,7 +82,7 @@ public class LiquidGlassWidget extends ClickableWidget {
 //#else
     public boolean mouseDragged(Click click, double offsetX, double offsetY) {
 //#endif
-        if (this.dragging && click.button() == 0) {
+        if (this.dragging && click.button() == PlatformInput.LEFT_MOUSE_BUTTON) {
             int newX = (int) (click.x() - this.dragOffsetX);
             int newY = (int) (click.y() - this.dragOffsetY);
             this.setX(newX);
@@ -96,7 +98,7 @@ public class LiquidGlassWidget extends ClickableWidget {
 //#else
     public boolean mouseReleased(Click click) {
 //#endif
-        if (this.dragging && click.button() == 0) {
+        if (this.dragging && click.button() == PlatformInput.LEFT_MOUSE_BUTTON) {
             this.dragging = false;
         }
 

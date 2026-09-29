@@ -68,7 +68,9 @@ public class ScrollableListWidget<E extends ScrollableListWidget.Entry<E>> exten
     }
 
     public void setSelected(E entry) {
-//#if MC >= 26
+//#if MC >= 26.3
+        if (!InputConstants.isKeyDown(InputConstants.KEY_LCONTROL)) {
+//#elseif MC >= 26
         if (!InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), InputConstants.KEY_LCONTROL)) {
 //#else
         if (!InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow(), InputUtil.GLFW_KEY_LEFT_CONTROL)) {

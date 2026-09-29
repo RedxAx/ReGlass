@@ -39,8 +39,8 @@ addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50,
 - ReGlass keybinds are unbound by default and can be changed in Minecraft's Controls screen.
 
 ### Building:
-- `./gradlew :26.1:runClient` runs the current 26.1 Fabric target.
-- `./gradlew buildAll` builds every configured Stonecutter target.
+- `./gradlew :26.3:runClient` runs the current 26.3 Fabric target.
+- `./gradlew buildAll` builds all supported targets: 26.3, 26.2, 26.1, and 1.21.11.
 
 ## Contributing Is More Than Welcome!
 Especially In The Minecraft UI Redesign Part, This Part Is Highly WIP And Needs a Lot of Work.
