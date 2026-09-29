@@ -1,7 +1,11 @@
 package restudio.reglass.mixin.accessor;
 
 import net.minecraft.client.gui.render.GuiRenderer;
+//#if MC >= 26
+import net.minecraft.client.renderer.MultiBufferSource;
+//#else
 import net.minecraft.client.render.VertexConsumerProvider;
+//#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -9,5 +13,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface GuiRendererAccessor {
 
     @Accessor("vertexConsumers")
+//#if MC >= 26
+    MultiBufferSource.BufferSource getVertexConsumers();
+//#else
     VertexConsumerProvider.Immediate getVertexConsumers();
+//#endif
 }
+

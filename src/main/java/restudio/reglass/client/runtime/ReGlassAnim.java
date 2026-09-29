@@ -113,7 +113,7 @@ public final class ReGlassAnim {
 
     public float tintAlpha() { return tintAlpha; }
     public float smoothing() { return smoothing; }
-    public int blurRadiusInt() { return Math.max(0, Math.round(blurRadiusF)); }
+    public int blurRadiusInt() { return Math.max(1, Math.round(blurRadiusF)); }
 
     public float shadowExpand() { return shadowExpand; }
     public float shadowFactor() { return shadowFactor; }

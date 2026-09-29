@@ -8,3 +8,15 @@ pluginManagement {
 		gradlePluginPortal()
 	}
 }
+
+plugins {
+	id 'dev.kikugie.stonecutter' version "${stonecutter_version}"
+}
+
+rootProject.name = 'ReGlass'
+
+stonecutter {
+	create(getRootProject()) {
+		versions '26.2', '26.1', '1.21.11'
+	}
+}

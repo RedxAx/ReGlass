@@ -1,0 +1,17 @@
+plugins {
+	id 'dev.kikugie.stonecutter'
+}
+
+stonecutter.active '26.2'
+
+tasks.register('buildAll') {
+	group = 'build'
+	description = 'Builds every configured Stonecutter version.'
+	dependsOn provider { subprojects.collect { it.tasks.named('build') } }
+}
+
+tasks.register('publishAllToMavenLocal') {
+	group = 'publishing'
+	description = 'Publishes every configured Stonecutter version to Maven Local.'
+	dependsOn provider { subprojects.collect { it.tasks.named('publishToMavenLocal') } }
+}

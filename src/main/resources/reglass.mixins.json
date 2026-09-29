@@ -1,12 +1,20 @@
 {
   "required": true,
   "package": "restudio.reglass.mixin",
+//#if MC >= 26
+  "compatibilityLevel": "JAVA_25",
+//#else
   "compatibilityLevel": "JAVA_21",
+//#endif
   "mixins": [
+//#if MC >= 26
+    "widgets.SliderWidgetMixin"
+//#else
     "accessor.GuiRendererAccessor",
     "client.MinecraftClientMixin",
     "widgets.SliderWidgetMixin",
     "widgets.TooltipStateMixin"
+//#endif
   ],
   "injectors": {
     "defaultRequire": 1
@@ -16,14 +24,49 @@
   },
   "client": [
     "accessor.DrawContextAccessor",
+    "accessor.BeaconScreenButtonAccessor",
+    "accessor.GameRendererAccessor",
+//#if MC < 26
     "accessor.GuiRenderStateAccessor",
+//#endif
+    "accessor.OptionsAccessor",
+//#if MC >= 26
+    "accessor.ScissorStackAccessor",
+//#endif
+    "accessor.ShulkerBoxMenuAccessor",
+    "accessor.SlotAccessor",
     "accessor.SliderWidgetAccessor",
+//#if MC < 26
     "accessor.TextIconButtonWidgetAccessor",
+//#endif
+    "client.AbstractContainerScreenMixin",
+    "client.AnvilScreenMixin",
+//#if MC < 26
+    "client.BeaconScreenMixin",
+//#endif
+    "client.BeaconPowerButtonMixin",
+//#if MC >= 26
+    "client.BeaconScreenMixin",
+//#endif
+    "client.BrewingStandScreenMixin",
+    "client.CreativeModeInventoryScreenMixin",
+    "client.EnchantmentScreenMixin",
+//#if MC < 26
     "client.GuiRendererMixin",
+//#endif
     "client.InGameHudMixin",
+    "client.InventoryScreenMixin",
+    "client.LoomScreenMixin",
+    "client.MerchantScreenMixin",
+    "client.RecipeBookComponentMixin",
+    "client.RecipeBookTabButtonMixin",
     "client.ScreenMixin",
+    "client.ShulkerBoxBlockMixin",
+    "client.StonecutterScreenMixin",
     "client.TitleScreenMixin",
     "logical.GameRendererMixin",
-    "widgets.DrawContextMixin"
+    "widgets.DrawContextMixin",
+    "widgets.GuiRendererMixin"
   ]
 }
+

@@ -1,7 +1,12 @@
 package restudio.reglass.mixin.widgets;
 
+//#if MC >= 26
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+//#else
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.ScreenRect;
+//#endif
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.tooltip.TooltipState;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +23,11 @@ public class TooltipStateMixin {
     @Shadow @Nullable private Tooltip tooltip;
 
 //    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+//#if MC >= 26
+//    private void onRender(GuiGraphicsExtractor context, int mouseX, int mouseY, boolean hovered, boolean focused, ScreenRectangle navigationFocus, CallbackInfo ci) {
+//#else
 //    private void onRender(DrawContext context, int mouseX, int mouseY, boolean hovered, boolean focused, ScreenRect navigationFocus, CallbackInfo ci) {
+//#endif
 //        if (!ReGlassConfig.INSTANCE.features.enableRedesign) return;
 //
 //        ci.cancel();

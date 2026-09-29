@@ -14,6 +14,12 @@ public class WidgetStyle {
     private boolean hasBlurRadius;
     private int blurRadius;
 
+    private boolean hasLayer;
+    private int layer;
+
+    private boolean hasFadeKey;
+    private long fadeKey;
+
     private boolean hasShadow;
     private float shadowExpand;
     private float shadowFactor;
@@ -42,7 +48,9 @@ public class WidgetStyle {
 
     public WidgetStyle tint(int color, float alpha) { this.hasTint = true; this.tintColor = color; this.tintAlpha = alpha; return this; }
     public WidgetStyle smoothing(float factor) { this.hasSmoothing = true; this.smoothingFactor = factor; return this; }
-    public WidgetStyle blurRadius(int radius) { this.hasBlurRadius = true; this.blurRadius = Math.max(0, radius); return this; }
+    public WidgetStyle layer(int v) { this.hasLayer = true; this.layer = v; return this; }
+    public WidgetStyle fadeKey(long key) { this.hasFadeKey = true; this.fadeKey = key; return this; }
+    public WidgetStyle blurRadius(int radius) { this.hasBlurRadius = true; this.blurRadius = Math.max(1, radius); return this; }
     public WidgetStyle shadow(float expand, float factor, float offsetX, float offsetY) { this.hasShadow = true; this.shadowExpand = expand; this.shadowFactor = factor; this.shadowOffsetX = offsetX; this.shadowOffsetY = offsetY; return this; }
     public WidgetStyle shadowColor(int color, float alpha) { this.hasShadow = true; this.shadowColor = color; this.shadowColorAlpha = alpha; return this; }
     public WidgetStyle refractionThickness(float v) { this.hasRefraction = true; this.refThickness = v; return this; }
@@ -62,6 +70,9 @@ public class WidgetStyle {
     public float getTintAlpha() { return hasTint ? tintAlpha : ReGlassAnim.INSTANCE.tintAlpha(); }
 
     public float getSmoothing() { return hasSmoothing ? smoothingFactor : ReGlassAnim.INSTANCE.smoothing(); }
+    public int getLayer() { return hasLayer ? layer : ReGlassConfig.INSTANCE.defaultLayer; }
+    public boolean hasFadeKey() { return hasFadeKey; }
+    public long getFadeKey() { return fadeKey; }
     public int getBlurRadius() { return hasBlurRadius ? blurRadius : ReGlassAnim.INSTANCE.blurRadiusInt(); }
 
     public float getShadowExpand() { return hasShadow ? shadowExpand : ReGlassAnim.INSTANCE.shadowExpand(); }

@@ -50,6 +50,8 @@ public final class ReGlassSettingsIO {
         d.features_buttons = c.features.buttons;
         d.features_sliders = c.features.sliders;
         d.features_hotbar = c.features.hotbar;
+        d.features_containers = c.features.containers;
+        d.containerTextPanels = c.features.containerTextPanels;
         d.features_cancelScreenDarkening = c.features.cancelScreenDarkening;
         d.features_pixelatedGrid = c.features.pixelatedGrid;
 
@@ -97,13 +99,15 @@ public final class ReGlassSettingsIO {
         c.features.buttons = d.features_buttons;
         c.features.sliders = d.features_sliders;
         c.features.hotbar = d.features_hotbar;
+        c.features.containers = d.features_containers;
+        c.features.containerTextPanels = d.containerTextPanels;
         c.features.cancelScreenDarkening = d.features_cancelScreenDarkening;
         c.features.pixelatedGrid = d.features_pixelatedGrid;
 
         c.defaultTintColor = d.tintColor;
         c.defaultTintAlpha = d.tintAlpha;
         c.defaultSmoothing = d.smoothing;
-        c.defaultBlurRadius = d.blurRadius;
+        c.defaultBlurRadius = Math.max(1, d.blurRadius);
 
         c.defaultShadowExpand = d.shadowExpand;
         c.defaultShadowFactor = d.shadowFactor;
@@ -140,25 +144,29 @@ public final class ReGlassSettingsIO {
         public boolean features_buttons = true;
         public boolean features_sliders = true;
         public boolean features_hotbar = true;
+        public boolean features_containers = true;
+        @Deprecated
+        public String containerStyle = "BATCH";
+        public boolean containerTextPanels = true;
         public boolean features_cancelScreenDarkening = true;
         public boolean features_pixelatedGrid = false;
 
         public int tintColor = 0x000000;
         public float tintAlpha = 0f;
         public float smoothing = 0.003f;
-        public int blurRadius = 3;
+        public int blurRadius = 8;
 
-        public float shadowExpand = 25.0f;
-        public float shadowFactor = 0.15f;
+        public float shadowExpand = 18.2f;
+        public float shadowFactor = 0.208f;
         public float shadowOffsetX = 0.0f;
         public float shadowOffsetY = 2.0f;
         public int shadowColor = 0x000000;
         public float shadowColorAlpha = 1.0f;
 
-        public float refThickness = 20.0f;
+        public float refThickness = 13.15f;
         public float refFactor = 1.4f;
         public float refDispersion = 7.0f;
-        public float refFresnelRange = 30.0f;
+        public float refFresnelRange = 39.71f;
         public float refFresnelHardness = 20.0f;
         public float refFresnelFactor = 20.0f;
 
@@ -167,13 +175,13 @@ public final class ReGlassSettingsIO {
         public float glareConvergence = 50.0f;
         public float glareOppositeFactor = 80.0f;
         public float glareFactor = 90.0f;
-        public float glareAngleRad = (float) (-45.0 * Math.PI / 180.0);
+        public float glareAngleRad = -0.785f;
 
         public float pixelatedGridSize = 8.0f;
 
-        public float hoverScalePx = 1.5f;
+        public float hoverScalePx = 1.53f;
         public float focusScalePx = 2.5f;
-        public float focusBorderWidthPx = 2.0f;
+        public float focusBorderWidthPx = 2.04f;
         public float focusBorderIntensity = 0.75f;
         public float focusBorderSpeed = 1.6f;
     }

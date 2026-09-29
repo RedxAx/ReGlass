@@ -36,8 +36,11 @@ addDrawableChild(new LiquidGlassWidget(width / 2 - 75, height / 2 - 25, 150, 50,
 ```
 
 ### Keybinds:
-- `G`: Open The Configuration Screen For ReGlass. (Click In-Game)
-- `H`: Playground, Shows a Styled ReGlass Widget, And You Can Summon More By Right Clicking. All Widgets Are Draggable. (Click In-Game)
+- ReGlass keybinds are unbound by default and can be changed in Minecraft's Controls screen.
+
+### Building:
+- `./gradlew :26.1:runClient` runs the current 26.1 Fabric target.
+- `./gradlew buildAll` builds every configured Stonecutter target.
 
 ## Contributing Is More Than Welcome!
 Especially In The Minecraft UI Redesign Part, This Part Is Highly WIP And Needs a Lot of Work.

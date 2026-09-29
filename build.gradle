@@ -1,40 +1,221 @@
-plugins {
-	id 'fabric-loom' version "${loom_version}"
-	id 'maven-publish'
+buildscript {
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		mavenCentral()
+		gradlePluginPortal()
+	}
+	dependencies {
+		classpath "net.fabricmc:fabric-loom:${project.loom_version}"
+	}
 }
+
+plugins {
+	id 'dev.kikugie.stonecutter'
+	id 'maven-publish'
+	id 'idea'
+}
+
+apply plugin: project.minecraft_version.startsWith("1.") ? 'fabric-loom' : 'net.fabricmc.fabric-loom'
 
 version = project.mod_version
 group = project.maven_group
 
 base {
-	archivesName = project.archives_base_name
+	archivesName = "${project.archives_base_name}-${project.minecraft_version}"
 }
 
 repositories {
-
-
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/releases/'
+	}
 }
 
 dependencies {
 
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	if (project.minecraft_version.startsWith("1.")) {
+		mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+		modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+		modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+	} else {
+		implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+		implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+	}
 	
 }
 
-processResources {
-	inputs.property "version", project.version
+sourceSets {
+	main {
+		def generatedJava = layout.buildDirectory.dir("generated/reglass/main/java")
+		def generatedResources = layout.buildDirectory.dir("generated/reglass/main/resources")
+		java.setSrcDirs(files(generatedJava))
+		resources.setSrcDirs(files(generatedResources))
+		if (!project.minecraft_version.startsWith("1.")) {
+			java {
+				exclude "restudio/reglass/client/screen/world/**"
+				exclude "restudio/reglass/client/screen/widget/world/**"
+				exclude "restudio/reglass/client/gui/LiquidGlassGuiElementRenderer.java"
+				exclude "restudio/reglass/mixin/accessor/GuiRendererAccessor.java"
+				exclude "restudio/reglass/mixin/accessor/TextIconButtonWidgetAccessor.java"
+				exclude "restudio/reglass/mixin/client/GuiRendererMixin.java"
+				exclude "restudio/reglass/mixin/client/MinecraftClientMixin.java"
+				exclude "restudio/reglass/mixin/widgets/TooltipStateMixin.java"
+			}
+		}
+	}
+}
 
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+def preprocessReglassText
+preprocessReglassText = { String text, String minecraftVersion ->
+	def branches = []
+	def output = []
+	def active = { -> branches.every { it.active } }
+	def compareVersions = { String left, String right ->
+		def parse = { String value -> value.split('-')[0].split('\\.').collect { it.isInteger() ? it.toInteger() : 0 } }
+		def l = parse(left)
+		def r = parse(right)
+		def max = Math.max(l.size(), r.size())
+		for (int i = 0; i < max; i++) {
+			def lv = i < l.size() ? l[i] : 0
+			def rv = i < r.size() ? r[i] : 0
+			if (lv != rv) return lv <=> rv
+		}
+		return 0
+	}
+	def evalTerm = { String term ->
+		def parts = term.trim().split(/\s+/)
+		if (parts.length != 3 || parts[0] != 'MC') {
+			throw new GradleException("Unsupported preprocess condition: ${term}")
+		}
+		def c = compareVersions(minecraftVersion, parts[2])
+		switch (parts[1]) {
+			case '>=': return c >= 0
+			case '>': return c > 0
+			case '<=': return c <= 0
+			case '<': return c < 0
+			case '==': return c == 0
+			case '!=': return c != 0
+			default: throw new GradleException("Unsupported preprocess operator: ${parts[1]}")
+		}
+	}
+	def evalCondition = { String condition ->
+		condition.split(/\|\|/).any { orPart ->
+			orPart.split(/&&/).every { andPart -> evalTerm(andPart) }
+		}
+	}
+
+	text.readLines().each { line ->
+		def trimmed = line.stripLeading()
+		if (trimmed.startsWith('//? if ')) {
+			def parentActive = active()
+			def raw = trimmed.substring('//? if '.length()).trim()
+			if (raw.endsWith('{')) raw = raw.substring(0, raw.length() - 1).trim()
+			def condition = evalCondition(raw.startsWith('MC ') ? raw : "MC ${raw.replaceFirst(/^(>=|>|<=|<|==|!=)/, '$1 ')}")
+			branches << [parentActive: parentActive, active: parentActive && condition, matched: condition]
+		} else if (trimmed.startsWith('//#if ')) {
+			def parentActive = active()
+			def condition = evalCondition(trimmed.substring('//#if '.length()).trim())
+			branches << [parentActive: parentActive, active: parentActive && condition, matched: condition]
+		} else if (trimmed.startsWith('//#elseif ')) {
+			def current = branches.removeLast()
+			def condition = evalCondition(trimmed.substring('//#elseif '.length()).trim())
+			branches << [parentActive: current.parentActive, active: current.parentActive && !current.matched && condition, matched: current.matched || condition]
+		} else if (trimmed.startsWith('//#else')) {
+			def current = branches.removeLast()
+			branches << [parentActive: current.parentActive, active: current.parentActive && !current.matched, matched: true]
+		} else if (trimmed.startsWith('//?}')) {
+			branches.removeLast()
+		} else if (trimmed.startsWith('//#endif')) {
+			branches.removeLast()
+		} else if (active()) {
+			def marker = line.indexOf('//$$')
+			if (marker >= 0) {
+				def uncommented = line.substring(marker + 4).replaceFirst(/^ /, '')
+				output << line.substring(0, marker) + uncommented
+			} else {
+				output << line
+			}
+		}
+	}
+	return output.join(System.lineSeparator())
+}
+
+def preprocessReglassTree = { File input, File output, String minecraftVersion ->
+	if (!input.exists()) return
+	input.eachFileRecurse { file ->
+		if (!file.isFile()) return
+		def relative = input.toPath().relativize(file.toPath()).toString()
+		def target = output.toPath().resolve(relative).toFile()
+		target.parentFile.mkdirs()
+		def ext = file.name.contains('.') ? file.name.substring(file.name.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT) : ''
+		if (['png', 'jpg', 'jpeg', 'webp', 'ogg'].contains(ext)) {
+			target.bytes = file.bytes
+		} else {
+			target.text = preprocessReglassText(file.getText('UTF-8'), minecraftVersion)
+		}
+	}
+}
+
+def preprocessReglassSources = tasks.register('preprocessReglassSources') {
+	def generatedJava = layout.buildDirectory.dir("generated/reglass/main/java")
+	def generatedResources = layout.buildDirectory.dir("generated/reglass/main/resources")
+	inputs.dir(rootProject.file('src/main/java'))
+	inputs.dir(rootProject.file('src/main/resources'))
+	outputs.dir(generatedJava)
+	outputs.dir(generatedResources)
+	doLast {
+		def javaOutput = generatedJava.get().asFile
+		def resourcesOutput = generatedResources.get().asFile
+		javaOutput.deleteDir()
+		resourcesOutput.deleteDir()
+		preprocessReglassTree(rootProject.file('src/main/java'), javaOutput, project.minecraft_version)
+		preprocessReglassTree(rootProject.file('src/main/resources'), resourcesOutput, project.minecraft_version)
+	}
+}
+
+idea {
+	module {
+		sourceDirs += rootProject.file('src/main/java')
+		resourceDirs += rootProject.file('src/main/resources')
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	dependsOn preprocessReglassSources
+}
+
+tasks.withType(Jar).configureEach {
+	dependsOn preprocessReglassSources
+}
+
+tasks.named('processResources') {
+	dependsOn preprocessReglassSources
+}
+
+processResources {
+	def properties = [
+			version: project.version,
+			loader_dependency: project.loader_dependency,
+			minecraft_dependency: project.minecraft_dependency,
+			java_dependency: project.java_dependency,
+			fabric_api_dependency: project.fabric_api_dependency
+	]
+
+	inputs.properties properties
+
+	filesMatching("fabric.mod.json") {
+		expand properties
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = project.java_version.toInteger()
 }
 
 java {
@@ -42,8 +223,12 @@ java {
 
     withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(project.java_version.toInteger())
+	}
+
+	sourceCompatibility = JavaVersion.toVersion(project.java_version)
+	targetCompatibility = JavaVersion.toVersion(project.java_version)
 }
 
 jar {
